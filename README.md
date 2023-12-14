@@ -21,5 +21,7 @@ the performance of trees in other circumstances and requires further investigati
 provide an illustrative example of DML for observational panel data showing the impact of the
 introduction of the national minimum wage in the UK.
 
+Working paper [here](https://arxiv.org/abs/2312.08174?context=cs.LG)
+
 ## R package
 `XTDML' implements DML for panel data models with fixed effects.
