@@ -43,11 +43,45 @@ dml_obj = dml_cre_plr$new(obj_dml_data, ml_l = ml_l, ml_m = ml_m,
                           ml_lbar = ml_lbar, ml_mbar = ml_mbar,
                           score="orth-PO", model = "non-separable")
 dml_obj$fit()
+dml_obj$print()
 ```
 
 ### Example for Approximation
 ```
-obj_dml_data = dml_approx_data_from_data_frame(df,
+# load data
+df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
+
+## IMPORTANT: TRANSFORM VARIABLES BEFOREHAND!
+# below the code for within-group transformation
+X = paste0("x", 1:30)
+y = df$y
+d = df$d
+
+data$y = df$y
+data$d = df$d
+
+# grand-mean
+df_gm = data %>%
+  mutate(across(c(X, y, d), ~ mean(.x)))
+gmX_list = as.list(select(df_gm[1,], starts_with(c("X", "y", "d"))))
+
+# indivifual mean
+df_m = df %>%
+  group_by(id) %>%
+  mutate(across(c(X, y, d), ~  mean(.x)))
+
+mX_list = as.list(select(df_m, starts_with(c("X", "y", "d"))))
+mX_list = mX_list[-1]
+
+# within-group transformation
+df_dm = data %>%
+  mutate(across(all_of(names(gmX_list)), ~ .x - mX_list[[cur_column()]] + gmX_list[[cur_column()]]))
+
+df_dm <- add_column(df_dm,  id, time, .before = 1)
+df2 = as.data.frame(df_dm)
+
+# set up DML procedure
+obj_dml_data = dml_approx_data_from_data_frame(df2,
                             x_cols = x_cols,  y_col = "y", d_cols = "d",
                             cluster_cols = "id")
 
@@ -64,6 +98,7 @@ dml_obj = dml_approx_plr$new(obj_dml_data, ml_l = ml_l, ml_m = ml_m,
                           ml_lbar = ml_lbar, ml_mbar = ml_mbar,
                           score="orth-PO")
 dml_obj$fit()
+dml_obj$print()
 ```
 
 ### Example for Hybrid
@@ -94,6 +129,7 @@ dml_obj = dml_hybrid_plr$new(obj_dml_data, ml_l = ml_l, ml_m = ml_m,
                           ml_lbar = ml_lbar, ml_mbar = ml_mbar,
                           score="orth-PO", model = "wg")
 dml_obj$fit()
+dml_obj$print()
 ```
 
 ## References
