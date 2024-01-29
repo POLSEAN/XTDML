@@ -30,5 +30,7 @@ xbar_cols <- paste0("m_x", 1:30)
 
 ## References
 Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018). Double/debiased machine learning for treatment and structural parameters. *The Econometrics Journal*, 21(1):C1–C68.
+
 Clarke, P. and Polselli, A. (2023). Double machine learning for static panel models with fixed effects. *arXiv preprint arXiv:2312.08174*.
+
 Mundlak, Y. (1978). On the pooling of time series and cross section data. *Econometrica*, pages 69–85.
