@@ -24,6 +24,7 @@ df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cr
 x_cols <- paste0("x", 1:30)
 xbar_cols <- paste0("m_x", 1:30)
 ```
+
 ### Example for CRE
 ```
 obj_dml_data = dml_cre_data_from_data_frame(df,
@@ -39,14 +40,55 @@ ml_l = learner$clone()
 ml_mbar = learner$clone()
 ml_lbar = learner$clone()
 
+# estimation with CRE with non-separable model
 dml_obj = dml_cre_plr$new(obj_dml_data, ml_l = ml_l, ml_m = ml_m,
                           ml_lbar = ml_lbar, ml_mbar = ml_mbar,
                           score="orth-PO", model = "non-separable")
 dml_obj$fit()
 ```
+
 ### Example for Approximation
+```
+obj_dml_data = dml_approx_data_from_data_frame(df,
+                            x_cols = x_cols,  y_col = "y", d_cols = "d",
+                            cluster_cols = "id")
+
+# lasso w/t dictionary
+learner = lrn("regr.cv_glmnet", s="lambda.min")
+ml_m = learner$clone()
+ml_l = learner$clone()
+
+ml_mbar = learner$clone()
+ml_lbar = learner$clone()
+
+# estimation with within-group transformation
+dml_obj = dml_approx_plr$new(obj_dml_data, ml_l = ml_l, ml_m = ml_m,
+                          ml_lbar = ml_lbar, ml_mbar = ml_mbar,
+                          score="orth-PO")
+dml_obj$fit()
+```
 
 ### Example for Hybrid
+```
+obj_dml_data = dml_hybrid_data_from_data_frame(df,
+                            x_cols = x_cols,  y_col = "y", d_cols = "d",
+                            xbar_cols = xbar_cols, dbar_cols = "m_d",                                                 
+                            cluster_cols = "id")
+
+# lasso w/t dictionary
+learner = lrn("regr.cv_glmnet", s="lambda.min")
+ml_m = learner$clone()
+ml_l = learner$clone()
+
+ml_mbar = learner$clone()
+ml_lbar = learner$clone()
+
+# estimation with within-group transformation
+dml_obj = dml_hybrid_plr$new(obj_dml_data, ml_l = ml_l, ml_m = ml_m,
+                          ml_lbar = ml_lbar, ml_mbar = ml_mbar,
+                          score="orth-PO", model = "wg")
+dml_obj$fit()
+```
 
 ## References
 Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018). Double/debiased machine learning for treatment and structural parameters. *The Econometrics Journal*, 21(1):C1–C68.
