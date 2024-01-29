@@ -18,12 +18,10 @@ Simulation data generated following DGP3 in [Clarke and Polselli (2023)](https:/
 ## Sample code
 ```
 dta = read.csv("data/dgp4_cre_short.csv")
-
 # set up data
 x_cols <- paste0("x", 1:30)
 xbar_cols <- paste0("m_x", 1:30)
-`` 
-
+```
 ### Example for CRE
 
 ### Example for Approximation
