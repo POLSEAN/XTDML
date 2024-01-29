@@ -12,10 +12,10 @@ The current version can be installed via devtools:
 library(devtools)
 install_github("POLSEAN/XTDML")
 ```
-
-Simulation data generated following DGP3 in [Clarke and Polselli (2023)](https://arxiv.org/abs/2312.08174) can be found in the folder /data.
-
 ## Sample code
+Below some examples of the use of the code with the three approaches. Simulation data is generated following DGP3 in [Clarke and Polselli (2023)](https://arxiv.org/abs/2312.08174) and is uploaded in the folder /data.
+
+### Example for CRE
 ```
 # load data
 df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
@@ -23,10 +23,8 @@ df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cr
 # set up data
 x_cols <- paste0("x", 1:30)
 xbar_cols <- paste0("m_x", 1:30)
-```
 
-### Example for CRE
-```
+# set up data for DML procedure
 obj_dml_data = dml_cre_data_from_data_frame(df,
                             x_cols = x_cols,  y_col = "y", d_cols = "d",
                             xbar_cols = xbar_cols, dbar_cols = "m_d",                                                 
@@ -70,6 +68,14 @@ dml_obj$fit()
 
 ### Example for Hybrid
 ```
+# load data
+df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
+
+# set up data
+x_cols <- paste0("x", 1:30)
+xbar_cols <- paste0("m_x", 1:30)
+
+# set up data for DML procedure
 obj_dml_data = dml_hybrid_data_from_data_frame(df,
                             x_cols = x_cols,  y_col = "y", d_cols = "d",
                             xbar_cols = xbar_cols, dbar_cols = "m_d",                                                 
