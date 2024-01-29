@@ -13,7 +13,7 @@ library(devtools)
 install_github("POLSEAN/XTDML")
 ```
 ## Sample code
-Below some examples of the use of the code with the three approaches. Simulation data is generated following DGP3 in [Clarke and Polselli (2023)](https://arxiv.org/abs/2312.08174) and is uploaded in the folder /data.
+Below we report some illustrative examples of the use of the code with the three approaches. Simulation data is generated following DGP3 in [Clarke and Polselli (2023)](https://arxiv.org/abs/2312.08174) and is uploaded in the folder `/data`.
 
 ### Example for CRE
 ```
