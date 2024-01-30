@@ -50,7 +50,9 @@ dml_obj$print()
 # load data
 df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
 
-## IMPORTANT: TRANSFORM VARIABLES BEFOREHAND!
+# _________________________________________________________________________________________ #
+## IMPORTANT: TRANSFORM DATA BEFOREHAND!
+# _________________________________________________________________________________________ #
 # below the code for within-group transformation
 X = paste0("x", 1:30)
 y = df$y
@@ -78,6 +80,7 @@ df_dm = data %>%
 
 df_dm <- add_column(df_dm,  id, time, .before = 1)
 df2 = as.data.frame(df_dm)
+# _________________________________________________________________________________________ #
 
 # set up DML procedure
 obj_dml_data = dml_approx_data_from_data_frame(df2,
