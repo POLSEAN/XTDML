@@ -1,10 +1,10 @@
 # XTDML
 The `XTDML` package implements double machine learning (DML) for static partially linear regression (PLR) models with fixed effects as in [Clarke and Polselli (2023)](https://arxiv.org/abs/2312.08174). The package buids on the `DoubleML` package by Chernozhukov et al. (2018) and uses the `mlr3` ecosystem.
 
-The package allows for the choice of three approaches for handling unobserved individual heterogeneity:
-1. Mundlak (1978)'s device or correlated random effects (CRE)
-2. Approximation approach that requires to transform the variables (i.e, time-demeaning or first-differencing)
-3. Hybrid approach that uses Mundlak's device to learn the nuisance parameters and than transforms the variables and nuisance predictions
+The package allows for the choice of three approaches for handling the unobserved individual heterogeneity:
+  1. Mundlak (1978)'s device or **correlated random effects** (CRE)
+  2. The **approximation approach** requires that the data be transformed with the within-group (wg) or first-difference transformation (fd) *beforehand* by the user
+  3. The **hybrid approach** requires that the user specifies the transformation (wg or fd; the default is wg)
 
 The current version can be installed via devtools:
 ```
