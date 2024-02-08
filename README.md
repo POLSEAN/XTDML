@@ -1,5 +1,5 @@
 # XTDML
-`XTDML` package implements double machine learning (DML) for static partially linear regression (PLR) models with fixed effects as in [Clarke and Polselli (2023)](https://arxiv.org/abs/2312.08174). The package buids on `DoubleML` package by Chernozhukov et al. (2018) and uses the `mlr3` ecosystem.
+The `XTDML` package implements double machine learning (DML) for static partially linear regression (PLR) models with fixed effects as in [Clarke and Polselli (2023)](https://arxiv.org/abs/2312.08174). The package buids on `DoubleML` package by Chernozhukov et al. (2018) and uses the `mlr3` ecosystem.
 
 The package allows for the choice of three approaches for handling the unobserved individual heterogeneity:
   1. Mundlak (1978)'s device or **correlated random effects** (CRE)
