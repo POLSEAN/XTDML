@@ -47,7 +47,7 @@ dml_obj$fit()
 dml_obj$print()
 ```
 
-### Example for Approximation
+### Example for approximation approach
 ```
 # load data
 df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
@@ -105,7 +105,7 @@ dml_obj$fit()
 dml_obj$print()
 ```
 
-### Example for Hybrid
+### Example for hybrid approach
 ```
 # load data
 df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
