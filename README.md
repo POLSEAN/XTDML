@@ -53,7 +53,7 @@ dml_obj$print()
 df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
 
 # _________________________________________________________________________________________ #
-## IMPORTANT: TRANSFORM DATA BEFOREHAND!
+## IMPORTANT: TRANSFORM DATA BEFOREHAND! (example with wg transformation)
 # _________________________________________________________________________________________ #
 # below the code for within-group transformation
 X = paste0("x", 1:30)
