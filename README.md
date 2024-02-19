@@ -3,7 +3,7 @@ The `XTDML` package implements double machine learning (DML) for static partiall
 
 The package allows for the choice of three approaches for handling the unobserved individual heterogeneity:
   1. Mundlak (1978)'s device or **correlated random effects** (CRE).
-  2. The **approximation approach** requires that the user *transforms* the raw data with the within-group (wg) or first-difference transformation (fd) *beforehand*.
+  2. The **approximation approach** requires that the user *transforms* the raw data with the within-group (wg) or first-difference  (fd)  transformation *beforehand*.
   3. The **hybrid approach** uses the *raw data* and requires that the user specifies the transformation (wg or fd; the default is wg).
 
 The current version can be installed via devtools:
