@@ -6,6 +6,10 @@ The package allows for the choice of three approaches for handling the unobserve
   2. The **approximation approach** requires that the user *transforms* the data with the within-group (wg) or first-difference  (fd)  transformation *beforehand*.
   3. The **hybrid approach** uses *original data* and requires that the user specifies the transformation (wg or fd; default ```model = "wg"```).
 
+> [!WARNING]
+> New working paper out soon with changes in the package
+
+## Installing the package from GitHub
 The current version can be installed via devtools:
 ```
 library(devtools)
