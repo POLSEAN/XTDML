@@ -98,13 +98,9 @@ learner = lrn("regr.cv_glmnet", s="lambda.min")
 ml_m = learner$clone()
 ml_l = learner$clone()
 
-ml_mbar = learner$clone()
-ml_lbar = learner$clone()
-
 # estimation with within-group transformation
-dml_obj = dml_approx_plr$new(obj_dml_data, ml_l = ml_l, ml_m = ml_m,
-                          ml_lbar = ml_lbar, ml_mbar = ml_mbar,
-                          score = "orth-PO", model = "wg")
+dml_obj = dml_approx_plr$new(obj_dml_data, ml_l = ml_l, ml_m = ml_m)
+
 dml_obj$fit()
 dml_obj$print()
 ```
