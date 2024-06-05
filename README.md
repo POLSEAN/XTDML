@@ -23,7 +23,7 @@ Below we report an illustrative example of the use of the code with the proposed
 df <- read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
 ```
 
-### Example for CRE
+### Example for CRE approach
 ```
 # set up data
 x_cols <- paste0("x", 1:30)
@@ -40,24 +40,23 @@ learner = lrn("regr.cv_glmnet", s="lambda.min")
 ml_m = learner$clone()
 ml_l = learner$clone()
 
-ml_mbar = learner$clone()
-ml_lbar = learner$clone()
-
 # estimation with CRE with non-separable model
 dml_obj = dml_cre_plr$new(obj_dml_data, ml_l = ml_l, ml_m = ml_m,
-                          ml_lbar = ml_lbar, ml_mbar = ml_mbar,
                           score="orth-PO", model = "non-separable")
+# {ml_lbar = ml_lbar, ml_mbar = ml_mbar} needed when choosing "separable" model
+
 dml_obj$fit()
 dml_obj$print()
 ```
 
-### Example for approximation approach
+### Example for WG-approximation approach
 ```
 # load data
 df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
 
 # _________________________________________________________________________________________ #
-## IMPORTANT: TRANSFORM DATA BEFOREHAND! (example with wg transformation)
+# IMPORTANT: TRANSFORM RAW DATA BEFOREHAND!
+# Note: This example uses the WG-transformation, but the FD-transformation can be used instead 
 # _________________________________________________________________________________________ #
 # below the code for within-group transformation
 X = paste0("x", 1:30)
@@ -105,7 +104,7 @@ dml_obj$fit()
 dml_obj$print()
 ```
 
-### Example for hybrid approach
+### Example for WG-hybrid approach
 ```
 # load data
 df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
@@ -130,7 +129,6 @@ ml_lbar = learner$clone()
 
 # estimation with within-group transformation
 dml_obj = dml_hybrid_plr$new(obj_dml_data, ml_l = ml_l, ml_m = ml_m,
-                          ml_lbar = ml_lbar, ml_mbar = ml_mbar,
                           score="orth-PO", model = "wg")
 dml_obj$fit()
 dml_obj$print()
