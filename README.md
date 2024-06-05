@@ -16,11 +16,11 @@ library(devtools)
 install_github("POLSEAN/XTDML")
 ```
 ## Sample code
-Below we report some illustrative examples of the use of the code with the three approaches. Simulation data is generated following DGP3 in [Clarke and Polselli (2023)](https://arxiv.org/abs/2312.08174) and is uploaded in the folder `/data`.
+Below we report an illustrative example of the use of the code with the proposed approaches. Simulation data is generated following DGP3 in [Clarke and Polselli (2023)](https://arxiv.org/abs/2312.08174) and is uploaded in the folder `/data`.
 
 ```
-# load data
-df = read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
+# load sample of simulated data 
+df <- read.csv("https://raw.githubusercontent.com/POLSEAN/XTDML/main/data/dgp4_cre_short.csv")
 ```
 
 ### Example for CRE
