@@ -7,7 +7,7 @@ The package allows for the choice of three approaches for handling the unobserve
   3. The **hybrid approach** uses *original data* and requires that the user specifies the transformation (wg or fd; default ```model = "wg"```).
 
 > [!WARNING]
-> New working paper out soon with changes in the package
+> Modifications to the `DoubleML` package will be soon available 
 
 ## Installing the package from GitHub
 The current version can be installed via devtools:
