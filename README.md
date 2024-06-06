@@ -200,6 +200,12 @@ dml_obj$print()
 ```
 
 ## References
-1. Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018). Double/debiased machine learning for treatment and structural parameters. *The Econometrics Journal*, 21(1):C1–C68.
-2. Clarke, P. and Polselli, A. (2023). Double machine learning for static panel models with fixed effects. *arXiv preprint arXiv:2312.08174*.
-3. Mundlak, Y. (1978). On the pooling of time series and cross section data. *Econometrica*, pages 69–85.
+Bach, P., Chernozhukov, V., Kurz, M. S., Spindler, M. and Klaassen, S. (2024), DoubleML - An Object-Oriented Implementation of Double Machine Learning in R, *Journal of Statistical Software*, 108(3): 1-56, doi:10.18637/jss.v108.i03, arXiv:2103.09603.
+
+Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., and Robins, J. (2018). Double/debiased machine learning for treatment and structural parameters. *The Econometrics Journal*, 21(1):C1–C68.
+
+Clarke, P. and Polselli, A. (2023). Double machine learning for static panel models with fixed effects. *arXiv preprint arXiv:2312.08174*.
+
+Mundlak, Y. (1978). On the pooling of time series and cross section data. *Econometrica*, pages 69–85.
+
+
