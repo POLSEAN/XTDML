@@ -15,7 +15,6 @@ instance of \code{dml_cre_data}.
 \itemize{
 \item \code{dml_cre_data$new()} for initialization from a \code{data.table}.
 \item \code{\link[=dml_cre_data_from_data_frame]{dml_cre_data_from_data_frame()}} for initialization from a \code{data.frame}.
-\item \code{\link[=dml_cre_data_from_matrix]{dml_cre_data_from_matrix()}} for initialization from \code{matrix} objects,
 }
 }
 \section{Active bindings}{

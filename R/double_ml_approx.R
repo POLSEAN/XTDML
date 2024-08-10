@@ -45,6 +45,16 @@ dml_approx = R6Class("dml_approx",
       }
     },
 
+    #' @field all_model_rmse (`matrix()`) \cr
+    #' Model root-mean-squared-error.
+    all_model_rmse = function(value) {
+      if (missing(value)) {
+        return(private$all_model_rmse_)
+      } else {
+        stop("can't set field all_model_rmse")
+      }
+    },
+
     #' @field apply_cross_fitting (`logical(1)`) \cr
     #' Indicates whether cross-fitting should be applied. Default is `TRUE`.
     apply_cross_fitting = function(value) {
@@ -170,7 +180,25 @@ dml_approx = R6Class("dml_approx",
         stop("can't set field psi_theta_b")
       }
     },
+    #' @field res_y (`array()`) \cr
+    #' Residual of output equation
+    res_y = function(value) {
+      if (missing(value)) {
+        return(private$res_y_)
+      } else {
+        stop("can't set field res_y")
+      }
+    },
 
+    #' @field res_d (`array()`) \cr
+    #' Residual of treatment equation
+    res_d = function(value) {
+      if (missing(value)) {
+        return(private$res_d_)
+      } else {
+        stop("can't set field res_d")
+      }
+    },
     #' @field predictions (`array()`) \cr
     #' Predictions of the nuisance models after calling
     #' `fit(store_predictions=TRUE)`.
@@ -179,6 +207,57 @@ dml_approx = R6Class("dml_approx",
         return(private$predictions_)
       } else {
         stop("can't set field predictions")
+      }
+    },
+    #' @field targets (`array()`) \cr
+    #' Targets of the nuisance models after calling
+    #' `fit(store_predictions=TRUE)`.
+    targets = function(value) {
+      if (missing(value)) {
+        return(private$targets_)
+      } else {
+        stop("can't set field targets")
+      }
+    },
+
+    #' @field rmses (`array()`) \cr
+    #' The root-mean-squared-errors of the nuisance parameters
+    rmses = function(value) {
+      if (missing(value)) {
+        return(private$rmses_)
+      } else {
+        stop("can't set field rmses")
+      }
+    },
+
+    #' @field all_model_mse (`array()`) \cr
+    #' Collection of all mean-squared-errors of the model
+    all_model_mse = function(value) {
+      if (missing(value)) {
+        return(private$all_model_mse_)
+      } else {
+        stop("can't set field all_model_mse")
+      }
+    },
+
+    #' @field model_rmse (`array()`) \cr
+    #' The root-mean-squared-errors of the model
+    model_rmse = function(value) {
+      if (missing(value)) {
+        return(private$model_rmse_)
+      } else {
+        stop("can't set field model_rmse")
+      }
+    },
+
+    #' @field models (`array()`) \cr
+    #' The fitted nuisance models after calling
+    #' `fit(store_models=TRUE)`.
+    models = function(value) {
+      if (missing(value)) {
+        return(private$models_)
+      } else {
+        stop("can't set field models")
       }
     },
 
@@ -281,43 +360,43 @@ dml_approx = R6Class("dml_approx",
         "Treatment variable: ", paste0(self$data$d_cols, collapse = ", "),
         "\n",
         "Covariates: ", paste0(cbind(self$data$x_cols), collapse = ", "), "\n",
-        "Instrument(s): ", paste0(self$data$z_cols, collapse = ", "), "\n",
+        #"Instrument(s): ", paste0(self$data$z_cols, collapse = ", "), "\n",
         cluster_info,
-        "No. Observations: ", self$data$n_obs, "\n")
+        "No. Observations: ", self$data$n_obs, "\n",
+        "No. Groups: ", length(unique(self$data$data_model[[self$data$cluster_cols]])), "\n")
 
       if (is.character(self$score)) {
         score_info = paste0(
           "Score function: ", self$score, "\n",
-          "DML algorithm: ", self$dml_procedure, "\n")
-      } else if (is.function(self$score)) {
-        score_info = paste0(
-          "Score function: User specified score function \n",
-          "DML algorithm: ", self$dml_procedure, "\n")
+          "DML algorithm: ", self$dml_procedure, "\n",
+          "DML approach: transformed variables ", "\n")
       }
       learner_info = character(length(self$learner))
-      for (i_lrn in seq_len(length(self$learner))) {
+      for (i_lrn in seq_len(length(self$params))) {
         if (any(class(self$learner[[i_lrn]]) == "Learner")) {
           learner_info[i_lrn] = paste0(
-            self$learner_names()[[i_lrn]], ": ",
-            self$learner[[i_lrn]]$id, "\n")
+            "Learner of nuisance ", self$params_names()[[i_lrn]], ": ", self$learner[[i_lrn]]$id, "\n",
+            "RMSE of nuisance ", self$params_names()[[i_lrn]], " : ", format(round(self$rmses[[i_lrn]], 5), nsmall = 5), "\n")
         } else {
           learner_info[i_lrn] = paste0(
-            self$learner_names()[[i_lrn]], ": ",
-            self$learner[i_lrn], "\n")
+            "Learner of nuisance ", self$params_names()[[i_lrn]], ": ", self$learner[i_lrn], "\n",
+            "RMSE of nuisance ", self$params_names()[[i_lrn]], " : ", format(round(self$rmses[[i_lrn]], 5), nsmall = 5), "\n")
         }
       }
+      model_info = paste0("Model RMSE: ", format(round(self$model_rmse, 5), nsmall = 5), "\n")
       resampling_info = paste0(
           "No. folds: ", self$n_folds, "\n",
           "No. folds per cluster: ", private$n_folds_per_cluster, "\n",
           "No. repeated sample splits: ", self$n_rep, "\n",
           "Apply cross-fitting: ", self$apply_cross_fitting, "\n")
+
       cat(header, "\n", "\n",
         "\n------------------ Data summary ------------------\n",
         data_info,
         "\n------------------ Score & algorithm ------------------\n",
         score_info,
         "\n------------------ Machine learner ------------------\n",
-        learner_info,
+        learner_info, model_info,
         "\n------------------ Resampling ------------------\n",
         resampling_info,
         "\n------------------ Fit summary ------------------\n ",
@@ -334,11 +413,21 @@ dml_approx = R6Class("dml_approx",
     #' Indicates whether the predictions for the nuisance functions should be
     #' stored in field `predictions`. Default is `FALSE`.
     #'
+    #' @param store_models (`logical(1)`) \cr
+    #' Indicates whether the fitted models for the nuisance functions should be
+    #' stored in field `models` if you want to analyze the models or extract
+    #' information like variable importance. Default is `FALSE`.
+    #'
     #' @return self
-    fit = function(store_predictions = FALSE) {
+    fit = function(store_predictions = FALSE, store_models = FALSE) {
+
+      private$initialize_rmses()  #ap
 
       if (store_predictions) {
-        private$initialize_predictions()
+        private$initialize_predictions_and_targets()
+      }
+      if (store_models) {
+        private$initialize_models()
       }
 
       for (i_rep in 1:self$n_rep) {
@@ -349,22 +438,29 @@ dml_approx = R6Class("dml_approx",
 
           # ml estimation of nuisance models and computation of psi elements
           res = private$nuisance_est(private$get__smpls())
-
           private$psi_theta_a_[, private$i_rep, private$i_treat] = res$psi_theta_a
           private$psi_theta_b_[, private$i_rep, private$i_treat] = res$psi_theta_b
 
+          private$res_y_[, private$i_rep, private$i_treat] = res$res_y
+          private$res_d_[, private$i_rep, private$i_treat] = res$res_d
+
           if (store_predictions) {
-            private$store_predictions(res$preds)    ##m_bar and l_bar included
+            private$store_predictions_and_targets(res$preds, res$targets) #ap
+          }
+          if (store_models) {
+            private$store_models(res$models)
           }
 
           # estimate the causal parameter
           private$all_coef_theta_[private$i_treat, private$i_rep] = private$est_causal_pars_theta()
-
           # compute score (depends on estimated causal parameter)
           private$psi_theta_[, private$i_rep, private$i_treat] = private$compute_score_theta()
-
-          # compute standard errors for causal parameters (theta_hat,pi_hat)
           private$all_se_theta_[private$i_treat, private$i_rep] = private$se_theta_causal_pars()
+
+          # calculate RMSE of the nuisance parameters
+          private$calc_rmses(res$preds, res$targets)
+          #calculate model RMSE
+          private$all_model_mse_[, private$i_rep, private$i_treat] = res$model_mse
         }
       }
       private$agg_cross_fit()
@@ -803,22 +899,30 @@ dml_approx = R6Class("dml_approx",
     all_coef_theta_ = NULL,
     all_dml1_coef_theta_ = NULL,
     all_se_theta_ = NULL,
+    all_model_mse_ = NULL,
     apply_cross_fitting_ = NULL,
     coef_theta_ = NULL,
     data_ = NULL,
     dml_procedure_ = NULL,
     draw_sample_splitting_ = NULL,
     learner_ = NULL,
+    model_ = NULL,
     n_folds_ = NULL,
     n_rep_ = NULL,
     params_ = NULL,
     psi_theta_ = NULL,
     psi_theta_a_ = NULL,
     psi_theta_b_ = NULL,
+    res_y_ = NULL,
+    res_d_ = NULL,
     predictions_ = NULL,
+    targets_ = NULL,
+    rmses_ = NULL,
+    models_ = NULL,
     pval_theta_ = NULL,
     score_ = NULL,
     se_theta_ = NULL,
+    model_rmse_ = NULL,
     smpls_ = NULL,
     t_stat_theta_ = NULL,
     tuning_res_theta_ = NULL,
@@ -1029,7 +1133,7 @@ dml_approx = R6Class("dml_approx",
     },
     initialize_arrays = function() {
 
-      ##_theta
+      #score elements
       private$psi_theta_ = array(NA_real_, dim = c(
         self$data$n_obs, self$n_rep,
         self$data$n_treat))
@@ -1040,14 +1144,26 @@ dml_approx = R6Class("dml_approx",
         self$data$n_obs, self$n_rep,
         self$data$n_treat))
 
+      private$res_y_ = array(NA_real_, dim = c(
+        self$data$n_obs, self$n_rep,
+        self$data$n_treat))
+      private$res_d_ = array(NA_real_, dim = c(
+        self$data$n_obs, self$n_rep,
+        self$data$n_treat))
+
+      #regression estimates
       private$coef_theta_ = array(NA_real_, dim = c(self$data$n_treat))
-      private$se_theta_ = array(NA_real_, dim = c(self$data$n_treat))
+      private$se_theta_   = array(NA_real_, dim = c(self$data$n_treat))
 
       private$all_coef_theta_ = array(NA_real_,
-        dim = c(self$data$n_treat, self$n_rep))
+                                      dim = c(self$data$n_treat, self$n_rep))
       private$all_se_theta_ = array(NA_real_,
-        dim = c(self$data$n_treat, self$n_rep))
-
+                                    dim = c(self$data$n_treat, self$n_rep))
+      #metrics
+      private$model_rmse_    = array(NA_real_, dim = c(self$data$n_treat))
+      private$all_model_mse_ = array(NA_real_, dim = c(
+        self$data$n_obs, self$n_rep,
+        self$data$n_treat))
 
       if (self$dml_procedure == "dml1") {
         if (self$apply_cross_fitting) {
@@ -1061,21 +1177,72 @@ dml_approx = R6Class("dml_approx",
         }
       }
     },
-    initialize_predictions = function() {
+    initialize_predictions_and_targets = function() {
       private$predictions_ = sapply(self$params_names(),
-        function(key) {
-          array(NA_real_, dim = c(
-            self$data$n_obs, self$n_rep,
-            self$data$n_treat))
-        },
-        simplify = F)
+                                    function(key) {
+                                      array(NA_real_, dim = c(
+                                        self$data$n_obs, self$n_rep,
+                                        self$data$n_treat))
+                                    },
+                                    simplify = F)
+      private$targets_ = sapply(self$params_names(),
+                                function(key) {
+                                  array(NA_real_, dim = c(
+                                    self$data$n_obs, self$n_rep,
+                                    self$data$n_treat))
+                                },
+                                simplify = F)
     },
-    store_predictions = function(preds) {   #preds includes all nuissances
+    initialize_rmses = function() {
+      private$rmses_ = sapply(self$params_names(),
+                              function(key) {
+                                array(NA_real_, dim = c(
+                                  self$n_rep,
+                                  self$data$n_treat))
+                              },
+                              simplify = F)
+    },
+    initialize_models = function() {
+      private$models_ = sapply(self$params_names(),
+                               function(x) {
+                                 sapply(self$data$d_cols,
+                                        function(x) {
+                                          lapply(
+                                            seq(self$n_rep),
+                                            function(x) vector("list", length = self$n_folds))
+                                        },
+                                        simplify = F)
+                               },
+                               simplify = F)
+    },
+    store_predictions_and_targets = function(preds, targets) {
       for (learner in self$params_names()) {
         if (!is.null(preds[[learner]])) {
-          private$predictions_[[learner]][
-            , private$i_rep,
-            private$i_treat] = preds[[learner]]
+          private$predictions_[[learner]][ , private$i_rep,
+                                      private$i_treat] = preds[[learner]]
+          private$targets_[[learner]][ , private$i_rep,
+                                       private$i_treat] = targets[[learner]]
+
+        }
+      }
+    },
+    calc_rmses = function(preds, targets){ ##ap
+      for (learner in self$params_names()) {
+        if (is.null(targets[[learner]])){
+          private$rmses_[[learner]] [private$i_rep, private$i_treat] = NULL #rep(NA,n_obs) ##
+        }else{
+          private$rmses_[[learner]][private$i_rep,
+                                    private$i_treat] = RMSE(preds[[learner]],targets[[learner]])
+          #print(paste0("RMSE(targets[[learner]]) ", learner,  " : " ,  targets[[learner]]))
+
+        }
+      }
+    },
+    store_models = function(models) {
+      for (learner in self$params_names()) {
+        if (!is.null(models[[learner]])) {
+          private$models_[[learner]][[self$data$treat_col]][[
+            private$i_rep]] = models[[learner]]
         }
       }
     },
@@ -1086,6 +1253,10 @@ dml_approx = R6Class("dml_approx",
     get__psi_theta_b = function() self$psi_theta_b[, private$i_rep, private$i_treat],
     get__all_coef_theta = function() self$all_coef_theta[private$i_treat, private$i_rep],
     get__all_se_theta = function() self$all_se_theta[private$i_treat, private$i_rep],
+    get__all_model_mse = function() self$all_model_mse[, private$i_rep, private$i_treat],
+    get__res_y = function() self$res_y[, private$i_rep, private$i_treat],
+    get__res_d = function() self$res_d[, private$i_rep, private$i_treat],
+
     est_causal_pars_theta = function() {
       dml_procedure = self$dml_procedure
       smpls = private$get__smpls()
@@ -1178,8 +1349,14 @@ dml_approx = R6Class("dml_approx",
     orth_est_theta = function() {
 
       dml_procedure = self$dml_procedure
+      # dml_approach  = self$dml_approach
+      # dml_type      = self$dml_type
+      # dml_transform = self$dml_transform
+
       psi_theta_a = private$get__psi_theta_a()
       psi_theta_b = private$get__psi_theta_b()
+      res_y = private$get__res_y()
+      res_d = private$get__res_d()
 
       smpls = private$get__smpls()
       test_ids = smpls$test_ids
@@ -1187,6 +1364,7 @@ dml_approx = R6Class("dml_approx",
 
       if (dml_procedure == "dml1") {
         thetas = rep(NA_real_, length(test_ids))
+        rmses  = rep(NA_real_, length(test_ids))
 
         for (i_fold in seq_len(length(test_ids))) {
           test_index = test_ids[[i_fold]]
@@ -1197,17 +1375,30 @@ dml_approx = R6Class("dml_approx",
           scaling_factor = 1 / prod(xx)
           thetas[i_fold] = -(scaling_factor * sum(psi_theta_b[test_index])) /
             (scaling_factor * sum(psi_theta_a[test_index]))
+          print(paste0("thetas in fold ", i_fold, " : ", thetas[i_fold]))
+
+          rmses[i_fold] = sqrt(scaling_factor * sum((res_y[test_index] - res_d[test_index] * thetas[i_fold])^2))
+          print(paste0("rmses in fold ", i_fold, " : ", rmses[i_fold]))
         }
         theta = mean(thetas, na.rm = TRUE)
         private$all_dml1_coef_theta_[private$i_treat, private$i_rep, ] = thetas
+        model_rmse = mean(rmses, na.rm = TRUE)
+        private$model_rmse_ = model_rmse
+
+        #print(paste0("theta in dml1: ", theta))
+        #print(paste0("rmse in dml1: ", model_rmse))
 
       } else if (dml_procedure == "dml2") {
         # See Chiang et al. (2021) Algorithm 1
         psi_theta_a = private$get__psi_theta_a()
         psi_theta_b = private$get__psi_theta_b()
+        res_y = private$get__res_y()
+        res_d = private$get__res_d()
 
         psi_theta_a_subsample_mean = 0.
         psi_theta_b_subsample_mean = 0.
+        theta_subsample_mean = 0.
+        rmses_subsample_mean = 0.
 
         for (i_fold in seq_len(length(test_ids))) {
           test_index = test_ids[[i_fold]]
@@ -1216,12 +1407,27 @@ dml_approx = R6Class("dml_approx",
             test_cluster_inds,
             function(x) length(x))
           scaling_factor = 1 / prod(xx)
+
+          # print(paste0("[test_index] in fold ", i_fold, " : ", test_index))
+
           psi_theta_a_subsample_mean = psi_theta_a_subsample_mean +
             scaling_factor * sum(psi_theta_a[test_index])
           psi_theta_b_subsample_mean = psi_theta_b_subsample_mean +
             scaling_factor * sum(psi_theta_b[test_index])
+
+          theta_subsample_mean =  - psi_theta_b_subsample_mean / psi_theta_a_subsample_mean
+          rmses_subsample_mean =  sqrt(scaling_factor * sum((res_y[test_index] - res_d[test_index] * theta_subsample_mean)^2))
+          print(paste0("rmses in fold ", i_fold, " : ", rmses_subsample_mean))
+          print(paste0("theta_subsample_mean in fold ", i_fold, ": ", theta_subsample_mean))
+
         }
         theta = -psi_theta_b_subsample_mean / psi_theta_a_subsample_mean
+        model_rmse = rmses_subsample_mean
+
+        print(paste0("theta in dml2: ", theta))
+        print(paste0("rmse in dml2: ", model_rmse))
+
+        private$model_rmse_ = model_rmse
       }
       return(theta)
     },

@@ -11,7 +11,6 @@
 #' instance of `dml_hybrid_data`.
 #' * `dml_hybrid_data$new()` for initialization from a `data.table`.
 #' * [dml_hybrid_data()] for initialization from a `data.frame`.
-#' * [dml_hybrid_data_from_matrix()] for initialization from `matrix` objects,
 #'
 #' @export
 dml_hybrid_data = R6Class("dml_hybrid_data",

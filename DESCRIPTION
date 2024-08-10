@@ -9,7 +9,7 @@ Authors@R: c(
 Author: Paul Clarke [aut],
         Annalivia Polselli [aut, cre]
 Maintainer: Annalivia Polselli <annalivia.polselli@essex.ac.uk>
-Description: Estimation of the causal parameter using double machine learning (Chernozhukov et al., 2018) with partially linear regression models (Robinson, 1988) in the context of panel data with fixed effects. 'XTDML' allows the estimation of the nuisance functions in the model by machine learning methods and computation  of the Neyman orthogonal score functions. 'XTDML' is uses the 'mlr3' ecosystem.  The object-oriented implementation of 'XTDML' is based on the 'R6' package and it is built on 'DoubleML' by Chernozhukov et al. (2018). 
+Description: Estimation of the causal parameter using double machine learning (Chernozhukov et al., 2018) with partially linear regression models (Robinson, 1988) in the context of panel data with fixed effects. 'XTDML' allows the estimation of the nuisance functions in the model by machine learning methods and computation  of the Neyman orthogonal score functions. 'XTDML' is based on the CRAN package `DoubleML' that is an object-oriented implementation using the 'mlr3' ecosystem and the 'R6' package. 'XTDML' is built following 'DoubleML' by Chernozhukov et al. (2018). 
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 3.5.0)
@@ -18,4 +18,4 @@ Imports: R6 (>= 2.4.1), data.table (>= 1.12.8), stats, checkmate, mlr3
         clusterGeneration, readstata13, mlr3learners (>= 0.3.0),
         mlr3misc
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1

@@ -2,12 +2,12 @@
 % Please edit documentation in R/double_ml_cre_plr.R
 \name{dml_cre_plr}
 \alias{dml_cre_plr}
-\title{Double machine learning for partially linear regression models with CRE.}
+\title{Double machine learning for partially linear regression models for CRE and hybrid approaches.}
 \format{
 \link[R6:R6Class]{R6::R6Class} object inheriting from \link{dml_cre}.
 }
 \description{
-Double machine learning (DML) for partially linear regression models with CRE.
+Double machine learning (DML) for partially linear regression models for CRE and hybrid approaches.
 }
 \details{
 Partially linear regression (PLR) models of form
@@ -66,8 +66,10 @@ Creates a new instance of this R6 class.
   n_folds = 5,
   n_rep = 1,
   score = "orth-PO",
-  model = "non-separable",
   dml_procedure = "dml2",
+  dml_approach = "cre",
+  dml_type = "non-separable",
+  dml_transform = "wg",
   draw_sample_splitting = TRUE,
   apply_cross_fitting = TRUE
 )}\if{html}{\out{</div>}}
@@ -88,7 +90,7 @@ extension packages \href{https://mlr3learners.mlr-org.com/}{mlr3learners} or
 \href{https://mlr3extralearners.mlr-org.com/}{mlr3extralearners}.
 Alternatively, a \code{\link[mlr3:Learner]{Learner}} object with public field
 \code{task_type = "regr"} can be passed, for example of class
-\code{\link[mlr3pipelines:mlr_learners_graph]{GraphLearner}}. The learner can possibly
+\code{\link[mlr3pipelines:GraphLearner]{GraphLearner}}. The learner can possibly
 be passed with specified parameters, for example
 \code{lrn("regr.cv_glmnet", s = "lambda.min")}. \cr
 \code{ml_l} refers to the nuisance function \eqn{l_0(X) = E[Y|X]}, where X is
@@ -109,7 +111,7 @@ For binary treatment variables, an object of the class
 Alternatively, a \code{\link[mlr3:Learner]{Learner}} object with public field
 \code{task_type = "regr"} or \code{task_type = "classif"} can be passed,
 respectively, for example of class
-\code{\link[mlr3pipelines:mlr_learners_graph]{GraphLearner}}. \cr
+\code{\link[mlr3pipelines:GraphLearner]{GraphLearner}}. \cr
 \code{ml_m} refers to the nuisance function \eqn{m_0(X) = E[D|X]}, where X is
 a matrix of covariates. If a \code{'non-separable'} model is chosen, the matrix includes
 the covariates, their means, and the mean of the treatment. If a \code{'separable'}
@@ -123,7 +125,7 @@ extension packages \href{https://mlr3learners.mlr-org.com/}{mlr3learners} or
 \href{https://mlr3extralearners.mlr-org.com/}{mlr3extralearners}.
 Alternatively, a \code{\link[mlr3:Learner]{Learner}} object with public field
 \code{task_type = "regr"} can be passed, for example of class
-\code{\link[mlr3pipelines:mlr_learners_graph]{GraphLearner}}. The learner can possibly
+\code{\link[mlr3pipelines:GraphLearner]{GraphLearner}}. The learner can possibly
 be passed with specified parameters, for example
 \code{lrn("regr.cv_glmnet", s = "lambda.min")}. \cr
 \code{ml_g} refers to the nuisance function \eqn{g_0(X) = E[Y - D\theta_0|X]}, where X is
@@ -141,7 +143,7 @@ extension packages \href{https://mlr3learners.mlr-org.com/}{mlr3learners} or
 \href{https://mlr3extralearners.mlr-org.com/}{mlr3extralearners}.
 Alternatively, a \code{\link[mlr3:Learner]{Learner}} object with public field
 \code{task_type = "regr"} can be passed, for example of class
-\code{\link[mlr3pipelines:mlr_learners_graph]{GraphLearner}}. The learner can possibly
+\code{\link[mlr3pipelines:GraphLearner]{GraphLearner}}. The learner can possibly
 be passed with specified parameters, for example
 \code{lrn("regr.cv_glmnet", s = "lambda.min")}. \cr
 \code{ml_lbar} refers to the nuisance function \eqn{l_0(X) = E[Y|X]}, where X is
@@ -161,7 +163,7 @@ For binary treatment variables, an object of the class
 Alternatively, a \code{\link[mlr3:Learner]{Learner}} object with public field
 \code{task_type = "regr"} or \code{task_type = "classif"} can be passed,
 respectively, for example of class
-\code{\link[mlr3pipelines:mlr_learners_graph]{GraphLearner}}. \cr
+\code{\link[mlr3pipelines:GraphLearner]{GraphLearner}}. \cr
 \code{ml_mbar} refers to the nuisance function \eqn{m_0(X) = E[D|X]}, where X is
 a matrix of covariates that does not include the grand means of the
 covariates and treatment. Note: The learner \code{ml_mbar} is only required
@@ -175,7 +177,7 @@ extension packages \href{https://mlr3learners.mlr-org.com/}{mlr3learners} or
 \href{https://mlr3extralearners.mlr-org.com/}{mlr3extralearners}.
 Alternatively, a \code{\link[mlr3:Learner]{Learner}} object with public field
 \code{task_type = "regr"} can be passed, for example of class
-\code{\link[mlr3pipelines:mlr_learners_graph]{GraphLearner}}. The learner can possibly
+\code{\link[mlr3pipelines:GraphLearner]{GraphLearner}}. The learner can possibly
 be passed with specified parameters, for example
 \code{lrn("regr.cv_glmnet", s = "lambda.min")}. \cr
 \code{ml_g} refers to the nuisance function \eqn{g_0(X) = E[Y - D\theta_0|X]},
@@ -197,13 +199,21 @@ A \code{character(1)} (\code{"orth-PO"}, \code{"orth-IV"}, \code{"NO"}, or \code
 \code{"NO-IV"} is  the non-orthogonal score with the instrumental variable formula.
 Default is \code{"orth-PO"}.}
 
-\item{\code{model}}{(\code{character(1)}) \cr
-A \code{character(1)} (\code{"separable"} or \code{"non-separable"}).
-Default is \code{"non-separable"}.}
-
 \item{\code{dml_procedure}}{(\code{character(1)}) \cr
 A \code{character(1)} (\code{"dml1"} or \code{"dml2"}) specifying the double machine
 learning algorithm. Default is \code{"dml2"}.}
+
+\item{\code{dml_approach}}{(\code{character(1)}) \cr
+A \code{character(1)} (\code{"cre"} or \code{"hybrid"}) specifying the double machine
+learning algorithm. Default is \code{"cre"}.}
+
+\item{\code{dml_type}}{(\code{character(1)}) \cr
+A \code{character(1)} (\code{"separable"} or \code{"non-separable"}).
+Default is \code{"non-separable"}.}
+
+\item{\code{dml_transform}}{(\code{character(1)}) \cr
+A \code{character(1)} (\code{"fd"} or \code{"wg"}) when \code{"dml_approach"} is \code{"hybrid"}.
+Default is \code{"wg"}. Unused when \code{"dml_approach"} is \code{"cre"}.}
 
 \item{\code{draw_sample_splitting}}{(\code{logical(1)}) \cr
 Indicates whether the sample splitting should be drawn during

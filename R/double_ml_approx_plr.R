@@ -100,7 +100,7 @@ dml_approx_plr = R6Class("dml_approx_plr",
       ml_g = NULL,
       n_folds = 5,
       n_rep = 1,
-      score = "partialling out",
+      score = "orth-PO",
       dml_procedure = "dml2",
       draw_sample_splitting = TRUE,
       apply_cross_fitting = TRUE) {
@@ -340,14 +340,14 @@ dml_approx_plr = R6Class("dml_approx_plr",
       y = self$data$data_model[[self$data$y_col]]
 
       ##for IV-scores
-      g_hat = NULL
+      g_hat = list(preds = NULL, targets = NULL,  models = NULL)
       if (exists("ml_g", where = private$learner_)) {
         if (self$score == "orth-IV") {
-            psi_theta_a = -(d - m_hat) * (d - m_hat)
-            psi_theta_b =  (d - m_hat) * (y - l_hat)
+            psi_theta_a = -(d - m_hat$preds) * (d - m_hat$preds)
+            psi_theta_b =  (d - m_hat$preds) * (y - l_hat$preds)
         } else if (self$score == "NO-IV"){
           psi_theta_a = -d * d
-          psi_theta_b =  d * (y - l_hat)
+          psi_theta_b =  d * (y - l_hat$preds)
         }
         theta_initial = -mean(psi_theta_b, na.rm = TRUE) / mean(psi_theta_a, na.rm = TRUE)
 
@@ -366,48 +366,87 @@ dml_approx_plr = R6Class("dml_approx_plr",
                                fold_specific_params = private$fold_specific_params)
       }
 
-      res = private$panel_score_elements(y, d, m_hat, l_hat, g_hat)
+      res = private$panel_score_elements(y, d,
+                             m_hat$preds, l_hat$preds, g_hat$preds)
       res$preds = list(
-        "ml_l" = l_hat,
-        "ml_m" = m_hat,
-        "ml_g" = g_hat
-        )
+        "ml_l" = l_hat$preds,
+        "ml_m" = m_hat$preds,
+        "ml_g" = g_hat$preds)
+      res$targets = list(
+        "ml_l"    = l_hat$targets,
+        "ml_m"    = m_hat$targets,
+        "ml_g"    = g_hat$targets)
+      res$models = list(
+        "ml_l"    = l_hat$models,
+        "ml_m"    = m_hat$models,
+        "ml_g"    = g_hat$models)
+
       return(res)
     },
 
       ## Estimate causal parameters (pi_hat, theta_hat)
-      panel_score_elements = function(y, d,  m_hat, l_hat, g_hat, smpls){
+      panel_score_elements = function(y, d,
+                                      m_hat, l_hat, g_hat,
+                                      smpls){
 
-          u_hat = y - l_hat
-          v_hat = d - m_hat
+          # Residuals
+          u_hat  = y - l_hat
+          v_hat  = d - m_hat
+          ug_hat = y - g_hat
 
-          # 3. Get an initial estimate for \theta^(p) using the PO score with \pi^(p)
+          # Calculate scores
           if (self$score == "orth-PO") {
             # orthogonal score
-            psi_theta_a = -1*v_hat*v_hat
-            psi_theta_b =    v_hat*u_hat
+            psi_theta_a = -1*v_hat * v_hat
+            psi_theta_b =    v_hat * u_hat
+            res_y = u_hat
+            res_d = v_hat
 
           } else if (self$score == "orth-IV") {
             # orthogonal score
             psi_theta_a = -1*v_hat * d
-            psi_theta_b =    v_hat * (y - g_hat)
+            psi_theta_b =    v_hat * ug_hat
+            res_y = ug_hat
+            res_d = d
 
           } else if (self$score == "NO"){
             # non-orthogonal score
-            psi_theta_a = -1*d*d
-            psi_theta_b =    d*u_hat
+            psi_theta_a = -1*d * d
+            psi_theta_b =    d * u_hat
+            res_y = u_hat
+            res_d = d
 
           } else if (self$score == "NO-IV"){
             psi_theta_a = -1*d * d
-            psi_theta_b =    d * (y - g_hat)
+            psi_theta_b =    d * ug_hat
+            res_y = ug_hat
+            res_d = d
           }
+
           theta_hat = -mean(psi_theta_b, na.rm = TRUE) / mean(psi_theta_a, na.rm = TRUE)
 
-            res = list(theta_hat = theta_hat)
+          # Calculate Model RMSE
+          if (self$score == "orth-PO") {
+            model_mse = (u_hat - v_hat*theta_hat)^2
+          } else if (self$score == "orth-IV") {
+            model_mse = (ug_hat - d *theta_hat)^2  ##check if correct
+          } else if (self$score == "NO"){
+            model_mse = (u_hat - d *theta_hat)^2
+          } else if (self$score == "NO-IV"){
+            model_mse = (ug_hat - d *theta_hat)^2
+          }
 
-            psis = list(psi_theta_a = psi_theta_a,
-                        psi_theta_b = psi_theta_b)
-            return(c(res,psis))
+          #print(paste0("model_rmse in double_ml_cre_plr.R: ", model_rmse))
+
+          res = list(theta_hat  = theta_hat,
+                     model_mse = model_mse,
+                     res_y = res_y,
+                     res_d = res_d)
+          psis = list(psi_theta_a = psi_theta_a,
+                      psi_theta_b = psi_theta_b)
+          #print(paste0("res$res_y: ", res$res_y, "; ", "res$res_d: ", res$res_d))
+
+          return(c(res,psis))
       },
       nuisance_tuning = function(smpls, param_set, tune_settings,
       tune_on_folds, ...) {

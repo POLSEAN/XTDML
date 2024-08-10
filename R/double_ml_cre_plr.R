@@ -1,7 +1,7 @@
-#' @title Double machine learning for partially linear regression models with CRE.
+#' @title Double machine learning for partially linear regression models for CRE and hybrid approaches.
 #'
 #' @description
-#' Double machine learning (DML) for partially linear regression models with CRE.
+#' Double machine learning (DML) for partially linear regression models for CRE and hybrid approaches.
 #'
 #' @format [R6::R6Class] object inheriting from [dml_cre].
 #'
@@ -143,13 +143,21 @@ dml_cre_plr = R6Class("dml_cre_plr",
                         #' `"NO-IV"` is  the non-orthogonal score with the instrumental variable formula.
                         #' Default is `"orth-PO"`.
                         #'
-                        #' @param model (`character(1)`) \cr
-                        #' A `character(1)` (`"separable"` or `"non-separable"`).
-                        #' Default is `"non-separable"`.
-                        #'
                         #' @param dml_procedure (`character(1)`) \cr
                         #' A `character(1)` (`"dml1"` or `"dml2"`) specifying the double machine
                         #' learning algorithm. Default is `"dml2"`.
+                        #'
+                        #' @param dml_approach (`character(1)`) \cr
+                        #' A `character(1)` (`"cre"` or `"hybrid"`) specifying the double machine
+                        #' learning algorithm. Default is `"cre"`.
+                        #'
+                        #' @param dml_type (`character(1)`) \cr
+                        #' A `character(1)` (`"separable"` or `"non-separable"`).
+                        #' Default is `"non-separable"`.
+                        #'
+                        #' @param dml_transform (`character(1)`) \cr
+                        #' A `character(1)` (`"fd"` or `"wg"`) when `"dml_approach"` is `"hybrid"`.
+                        #' Default is `"wg"`. Unused when `"dml_approach"` is `"cre"`.
                         #'
                         #' @param draw_sample_splitting (`logical(1)`) \cr
                         #' Indicates whether the sample splitting should be drawn during
@@ -167,8 +175,10 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                               n_folds = 5,
                                               n_rep = 1,
                                               score = "orth-PO",
-                                              model = "non-separable",
                                               dml_procedure = "dml2",
+                                              dml_approach  = "cre",
+                                              dml_type      = "non-separable",
+                                              dml_transform = "wg",
                                               draw_sample_splitting = TRUE,
                                               apply_cross_fitting = TRUE) {
 
@@ -185,45 +195,55 @@ dml_cre_plr = R6Class("dml_cre_plr",
                             }
                           }
 
-                          ##add error message if separable and m0... not specified
-
                           super$initialize_double_ml(
                             data,
                             n_folds,
                             n_rep,
                             score,
-                            model,
                             dml_procedure,
+                            dml_approach,
+                            dml_type,
+                            dml_transform,
                             draw_sample_splitting,
                             apply_cross_fitting)
 
                           private$check_data(self$data)
                           private$check_score(self$score)
-                          private$check_model(self$model)
+                          private$check_approach_and_type(self$dml_approach,self$dml_type,self$dml_transform)
 
-                          if(self$model == "non-separable"){
+                          if(self$dml_type == "non-separable"){
                             ml_l = private$assert_learner(ml_l, "ml_l", Regr = TRUE, Classif = FALSE)
                             ml_m = private$assert_learner(ml_m, "ml_m", Regr = TRUE, Classif = TRUE)
+                            #ml_lbar = NULL
+                            #ml_lbar = NULL
+                          }else if(self$dml_type == "non-separable"){
+                            ml_l = private$assert_learner(ml_l, "ml_l", Regr = TRUE, Classif = FALSE)
+                            ml_m = private$assert_learner(ml_m, "ml_m", Regr = TRUE, Classif = TRUE)
+                            ml_lbar = private$assert_learner(ml_lbar, "ml_lbar", Regr = TRUE, Classif = FALSE)
+                            ml_mbar = private$assert_learner(ml_mbar, "ml_mbar", Regr = TRUE, Classif = TRUE)
+                          }
 
-                            private$learner_ = list("ml_l" = ml_l,
-                                                    "ml_m" = ml_m)
+                          private$learner_ = list("ml_l" = ml_l,
+                                                  "ml_m" = ml_m,
+                                                  "ml_lbar" = ml_lbar,
+                                                  "ml_mbar" = ml_mbar)
 
-                            if (!is.null(ml_g)) {
-                              assert(
-                                check_character(ml_g, max.len = 1),
-                                check_class(ml_g, "Learner"))
+                          if (self$dml_type == "non-separable"){
+
+                            if (!is.null(ml_g)){
+                              assert(check_character(ml_g, max.len = 1),
+                                     check_class(ml_g, "Learner"))
                               if ((self$score == "NO-IV") || (self$score == "orth-IV")) {
                                 ml_g = private$assert_learner(ml_g, "ml_g",
                                                               Regr = TRUE, Classif = FALSE)
                                 private$learner_[["ml_g"]] = ml_g
-                              } else if ((self$score == "NO") ||
-                                         (self$score == "orth-PO")) {
+                              } else if ((self$score == "NO") || (self$score == "orth-PO")) {
                                 warning(paste0(
                                   "A learner ml_g has been provided for ",
                                   "score = 'orth-PO' or 'NO' but will be ignored. ",
                                   "A learner ml_g is not required for estimation."))
                               }
-                            } else if ((self$score == "NO-IV") || (self$score == "orth-IV")) {
+                            }else if ((self$score == "NO-IV") || (self$score == "orth-IV")){
                               warning(paste0(
                                 "For 'IV-type' scores, learners ml_l and ml_g ",
                                 "should be specified. ",
@@ -233,18 +253,7 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                                             Regr = TRUE, Classif = FALSE)
                               private$learner_[["ml_g"]] = ml_g
                             }
-                          }else if(self$model == "separable"){
-
-                            ml_l = private$assert_learner(ml_l, "ml_l", Regr = TRUE, Classif = FALSE)
-                            ml_m = private$assert_learner(ml_m, "ml_m", Regr = TRUE, Classif = TRUE)
-                            ml_lbar = private$assert_learner(ml_lbar, "ml_lbar", Regr = TRUE, Classif = FALSE)
-                            ml_mbar = private$assert_learner(ml_mbar, "ml_mbar", Regr = TRUE, Classif = TRUE)
-
-                            private$learner_ = list("ml_l" = ml_l,
-                                                    "ml_m" = ml_m,
-                                                    "ml_lbar" = ml_lbar,
-                                                    "ml_mbar" = ml_mbar)
-
+                          }else if (self$dml_type == "separable"){
                             if (!is.null(ml_g) && !is.null(ml_gbar)) {
                               assert(check_character(ml_g, max.len = 1),
                                      check_class(ml_g, "Learner"))
@@ -256,14 +265,13 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                 ml_gbar = private$assert_learner(ml_gbar, "ml_gbar",Regr = TRUE, Classif = FALSE)
                                 private$learner_[["ml_g"]] = ml_g
                                 private$learner_[["ml_gbar"]] = ml_gbar
-                              } else if ((self$score == "NO") ||
-                                         (self$score == "orth-PO")) {
+                              } else if ((self$score == "NO") || (self$score == "orth-PO")) {
                                 warning(paste0(
                                   "A learner ml_g has been provided for ",
                                   "score = 'orth-PO' or 'NO' but will be ignored. ",
                                   "A learner ml_g and  ml_gbar is not required for estimation."))
                               }
-                            } else if ((self$score == "NO-IV") || (self$score == "orth-IV")) {
+                            }else if ((self$score == "NO-IV") || (self$score == "orth-IV")) {
                               warning(paste0(
                                 "For 'IV-type' scores, learners ml_l and ml_g ",
                                 "should be specified. ",
@@ -382,7 +390,7 @@ dml_cre_plr = R6Class("dml_cre_plr",
 
                           assert_list(param_set)
                           if ((self$score == "NO") || (self$score == "orth-PO")) {
-                            if ((self$model == "non-separable") && exists("ml_g", where = param_set)
+                            if ((self$dml_type == "non-separable") && exists("ml_g", where = param_set)
                                 && !exists("ml_l", where = param_set)) {
                               warning(paste0(
                                 "Learner ml_g was renamed to ml_l. ",
@@ -391,7 +399,7 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                 "The redirection will be removed in a future version."),
                                 call. = FALSE)
                               names(param_set)[names(param_set) == "ml_g"] = "ml_l"
-                            } else if ((self$model == "separable") &&
+                            } else if ((self$dml_type == "separable") &&
                                        (exists("ml_g", where = param_set) || exists("ml_gbar", where = param_set)) &&
                                        (!exists("ml_l", where = param_set) || !exists("ml_lbar", where = param_set))) {
                               warning(paste0(
@@ -427,13 +435,13 @@ dml_cre_plr = R6Class("dml_cre_plr",
                         initialize_ml_nuisance_params = function() {
                           nuisance = vector("list", self$data$n_treat)
                           names(nuisance) = self$data$d_cols
-                          if (self$model == "non-separable"){
+                          if (self$dml_type == "non-separable"){
                             private$params_ = list("ml_l" = nuisance,
-                                                   "ml_m" = nuisance)
+                                                   "ml_m"  = nuisance)
                             if (exists("ml_g", where = private$learner_)) {
                               private$params_[["ml_g"]] = nuisance
                             }
-                          }else if (self$model == "separable"){
+                          }else if (self$dml_type == "separable"){
                             private$params_ = list("ml_l"  = nuisance,
                                                    "ml_m"  = nuisance,
                                                    "ml_lbar" = nuisance,
@@ -449,14 +457,8 @@ dml_cre_plr = R6Class("dml_cre_plr",
 
                         nuisance_est = function(smpls, ...) {
 
-                          if(self$model == "non-separable"){
-
-                          d = self$data$data_model[[self$data$treat_col]]
-                          y = self$data$data_model[[self$data$y_col]]
-                          dbar = NULL
-                          ybar = NULL
-
-                          m_hat = dml_cv_predict(self$learner$ml_m,
+                          if(self$dml_type == "non-separable"){
+                            m_hat = dml_cv_predict(self$learner$ml_m,
                                                    c(self$data$x_cols,self$data$xbar_cols,self$data$dbar_cols),
                                                    self$data$treat_col,
                                                    self$data$data_model,
@@ -467,7 +469,7 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                                    task_type = private$task_type$ml_m,
                                                    fold_specific_params = private$fold_specific_params)
 
-                          l_hat = dml_cv_predict(self$learner$ml_l,
+                            l_hat = dml_cv_predict(self$learner$ml_l,
                                                    c(self$data$x_cols,self$data$xbar_cols),
                                                    self$data$y_col,
                                                    self$data$data_model,
@@ -478,19 +480,19 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                                    task_type = private$task_type$ml_l,
                                                    fold_specific_params = private$fold_specific_params)
 
-                            mbar_hat = NULL
-                            lbar_hat = NULL
+                            d = self$data$data_model[[self$data$treat_col]]
+                            y = self$data$data_model[[self$data$y_col]]
 
                             ##for IV-scores
-                            g_hat = NULL
-                            gbar_hat = NULL
+                            g_hat = list(preds = NULL, targets = NULL,  models = NULL)
+                            #gbar_hat = list(preds = NULL, models = NULL)
                             if (exists("ml_g", where = private$learner_)) {
                               if (self$score == "orth-IV") {
-                                psi_theta_a = -(d - m_hat) * (d - m_hat)
-                                psi_theta_b =  (d - m_hat) * (y - l_hat)
+                                psi_theta_a = -(d - m_hat$preds) * (d - m_hat$preds)
+                                psi_theta_b =  (d - m_hat$preds) * (y - l_hat$preds)
                               } else if (self$score == "NO-IV"){
                                 psi_theta_a = -d * d
-                                psi_theta_b =  d * (y - l_hat)
+                                psi_theta_b =  d * (y - l_hat$preds)
                               }
                               theta_initial = -mean(psi_theta_b, na.rm = TRUE) / mean(psi_theta_a, na.rm = TRUE)
 
@@ -508,23 +510,75 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                                      task_type = private$task_type$ml_g,
                                                      fold_specific_params = private$fold_specific_params)
                             }
-                          }else if(self$model == "separable"){
 
-                            d = self$data$data_model[[self$data$treat_col]]
-                            y = self$data$data_model[[self$data$y_col]]
-                            dbar = self$data$data_model[[self$data$dbar_cols]]
-                            ybar = self$data$data_model[[self$data$ybar_col]]
+                            idx = self$data$data_model[[self$data$cluster_cols]]
 
+                            # Transform the nuisance parameters and the target variables
+                            if(self$dml_approach == "hybrid" && self$dml_transform == "wg"){
+
+                              m_hat_raw = m_hat
+                              l_hat_raw = l_hat
+                              m_hat$pred   = wg_transformation(m_hat_raw$preds,idx)
+                              l_hat$pred   = wg_transformation(l_hat_raw$preds,idx)
+                              m_hat$target = wg_transformation(m_hat_raw$targets,idx)
+                              l_hat$target = wg_transformation(l_hat_raw$targets,idx)
+                              d = m_hat$target
+                              y = l_hat$target
+
+
+                              if (exists("ml_g", where = private$learner_)) {
+                                g_hat$pred   = wg_transformation(g_hat_raw$preds,idx)
+                                g_hat$target = wg_transformation(g_hat_raw$targets,idx)
+                                y = g_hat$target
+                              }
+
+                              #print(paste0("m_hat$target = ", m_hat$target, "d = ", d, "m_hat_raw$target = ", m_hat_raw$target))
+
+                            }else if(self$dml_approach == "hybrid" && self$dml_transform == "fd"){
+                              m_hat_raw = m_hat
+                              l_hat_raw = l_hat
+                              m_hat$pred   = fd_transformation(m_hat_raw$preds,idx)
+                              l_hat$pred   = fd_transformation(l_hat_raw$preds,idx)
+                              m_hat$target = fd_transformation(m_hat_raw$targets,idx)
+                              l_hat$target = fd_transformation(l_hat_raw$targets,idx)
+                              d = m_hat$target
+                              y = l_hat$target
+
+                              if (exists("ml_g", where = private$learner_)) {
+                                g_hat$pred   = fd_transformation(g_hat_raw$preds,idx)
+                                g_hat$target = fd_transformation(g_hat_raw$targets,idx)
+                                y = g_hat$target
+                              }
+                            }
+                            res = private$panel_score_elements(y, d, ybar, dbar,
+                                                               m_hat$preds, l_hat$preds, g_hat$preds)
+                            res$preds = list(
+                              "ml_l" = l_hat$preds,
+                              "ml_m" = m_hat$preds,
+                              "ml_g" = g_hat$preds)
+                            res$targets = list(
+                              "ml_l"    = l_hat$targets,
+                              "ml_m"    = m_hat$targets,
+                              "ml_g"    = g_hat$targets)
+                            res$models = list(
+                              "ml_l"    = l_hat$models,
+                              "ml_m"    = m_hat$models,
+                              "ml_g"    = g_hat$models)
+
+                            #print(paste0("m_hat$preds in plr = ", m_hat$preds))
+
+
+                          }else if(self$dml_type == "separable"){
                             mbar_hat = dml_cv_predict(self$learner$ml_mbar,  ##for BG estimation
-                                                    self$data$xbar_cols,
-                                                    self$data$dbar_cols,
-                                                    self$data$data_model,
-                                                    nuisance_id = "nuis_mbar",
-                                                    smpls = smpls,
-                                                    est_params = self$get_params("ml_mbar"),
-                                                    return_train_preds = FALSE,
-                                                    task_type = private$task_type$ml_mbar,
-                                                    fold_specific_params = private$fold_specific_params)
+                                                      self$data$xbar_cols,
+                                                      self$data$dbar_cols,
+                                                      self$data$data_model,
+                                                      nuisance_id = "nuis_mbar",
+                                                      smpls = smpls,
+                                                      est_params = self$get_params("ml_mbar"),
+                                                      return_train_preds = FALSE,
+                                                      task_type = private$task_type$ml_mbar,
+                                                      fold_specific_params = private$fold_specific_params)
 
                             m_hat = dml_cv_predict(self$learner$ml_m,       ##for CRE estimation
                                                    c(self$data$x_cols,self$data$xbar_cols),
@@ -538,15 +592,15 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                                    fold_specific_params = private$fold_specific_params)
 
                             lbar_hat = dml_cv_predict(self$learner$ml_lbar,  ##for bg estimation
-                                                    self$data$xbar_cols,
-                                                    self$data$ybar_col,
-                                                    self$data$data_model,
-                                                    nuisance_id = "nuis_lbar",
-                                                    smpls = smpls,
-                                                    est_params = self$get_params("ml_lbar"),
-                                                    return_train_preds = FALSE,
-                                                    task_type = private$task_type$ml_lbar,
-                                                    fold_specific_params = private$fold_specific_params)
+                                                      self$data$xbar_cols,
+                                                      self$data$ybar_col,
+                                                      self$data$data_model,
+                                                      nuisance_id = "nuis_lbar",
+                                                      smpls = smpls,
+                                                      est_params = self$get_params("ml_lbar"),
+                                                      return_train_preds = FALSE,
+                                                      task_type = private$task_type$ml_lbar,
+                                                      fold_specific_params = private$fold_specific_params)
 
                             l_hat = dml_cv_predict(self$learner$ml_l,  ##for cre estimation
                                                    c(self$data$x_cols,self$data$xbar_cols),
@@ -558,16 +612,23 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                                    return_train_preds = FALSE,
                                                    task_type = private$task_type$ml_l,
                                                    fold_specific_params = private$fold_specific_params)
+
+
+                            d = self$data$data_model[[self$data$treat_col]]
+                            y = self$data$data_model[[self$data$y_col]]
+                            dbar = self$data$data_model[[self$data$dbar_cols]]
+                            ybar = self$data$data_model[[self$data$ybar_col]]
+
                             ##for IV-scores
-                            g_hat = NULL
-                            gbar_hat = NULL
+                            g_hat = list(preds = NULL, targets = NULL,  models = NULL)
+                            gbar_hat = list(preds = NULL, targets = NULL,  models = NULL)
                             if (exists("ml_g", where = private$learner_)) {
                               if (self$score == "orth-IV") {
-                                psi_theta_a = -(d - m_hat) * (d - m_hat)
-                                psi_theta_b =  (d - m_hat) * (y - l_hat)
+                                psi_theta_a = -(d - m_hat$preds - mbar_hat$preds) * (d - m_hat$preds - mbar_hat$preds)
+                                psi_theta_b =  (d - m_hat$preds - mbar_hat$preds) * (y - l_hat$preds - lbar_hat$preds)
                               } else if (self$score == "NO-IV"){
                                 psi_theta_a = -d * d
-                                psi_theta_b =  d * (y - l_hat)
+                                psi_theta_b =  d * (y - l_hat$preds - lbar_hat$preds)
                               }
                               theta_initial = -mean(psi_theta_b, na.rm = TRUE) / mean(psi_theta_a, na.rm = TRUE)
 
@@ -575,18 +636,18 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                                     "y_minus_theta_d" = y - theta_initial * d)
 
                               gbar_hat = dml_cv_predict(self$learner$ml_gbar,
-                                                      self$data$x_cols,
-                                                      "y_minus_theta_d",
-                                                      data_aux,
-                                                      nuisance_id = "nuis_gbar",
-                                                      smpls = smpls,
-                                                      est_params = self$get_params("ml_gbar"),
-                                                      return_train_preds = FALSE,
-                                                      task_type = private$task_type$ml_gbar,
-                                                      fold_specific_params = private$fold_specific_params)
+                                                        self$data$x_cols,
+                                                        "y_minus_theta_d",
+                                                        data_aux,
+                                                        nuisance_id = "nuis_gbar",
+                                                        smpls = smpls,
+                                                        est_params = self$get_params("ml_gbar"),
+                                                        return_train_preds = FALSE,
+                                                        task_type = private$task_type$ml_gbar,
+                                                        fold_specific_params = private$fold_specific_params)
 
                               data_aux = data.table(self$data$data_model,
-                                                    "y_minus_g0_hat" = y - gbar_hat)
+                                                    "y_minus_g0_hat" = y - gbar_hat$preds)
 
                               g_hat = dml_cv_predict(self$learner$ml_g,
                                                      self$data$xbar_cols,
@@ -599,11 +660,66 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                                      task_type = private$task_type$ml_g,
                                                      fold_specific_params = private$fold_specific_params)
                             }
+
+                            idx = self$data$data_model[[self$data$cluster_cols]]
+
+                            # Transform the nuisance parameters and the target variables
+                            if(self$dml_transform == "wg"){
+
+                              m_hat_raw = m_hat
+                              l_hat_raw = l_hat
+
+                              m_hat$pred   = wg_transformation(m_hat_raw$preds,idx)
+                              l_hat$pred   = wg_transformation(l_hat_raw$preds,idx)
+
+                              m_hat$target = wg_transformation(m_hat_raw$targets,idx)
+                              l_hat$target = wg_transformation(l_hat_raw$targets,idx)
+
+                              d = m_hat$target
+                              y = l_hat$target
+
+                              if (exists("ml_g", where = private$learner_)) {
+                                g_hat$pred   = wg_transformation(g_hat_raw$preds,idx)
+                                g_hat$target = wg_transformation(g_hat_raw$targets,idx)
+                                y = g_hat$target
+                              }
+                            }else if(self$dml_transform == "fd"){
+                              m_hat = fd_transformation(m_hat_raw,idx)
+                              l_hat = fd_transformation(l_hat_raw,idx)
+                              d = fd_transformation(d_raw,idx)
+                              y = fd_transformation(y_raw,idx)
+                              if (exists("ml_g", where = private$learner_)) {
+                                g_hat_raw = g_hat$preds
+                                g_hat = fd_transformation(g_hat_raw,idx)
+                              }
+                            }
+
+                            res = private$panel_score_elements(y, d, ybar, dbar,
+                                                               m_hat$preds, l_hat$preds, g_hat$preds,
+                                                               mbar_hat$preds, lbar_hat$preds, gbar_hat$preds)
+
+                            res$preds = list(
+                              "ml_l" = l_hat$preds,
+                              "ml_m" = m_hat$preds,
+                              "ml_g" = g_hat$preds,
+                              "ml_lbar" = lbar_hat$preds,
+                              "ml_mbar" = mbar_hat$preds,
+                              "ml_gbar" = gbar_hat$preds)
+                            res$targets = list(
+                              "ml_l"    = l_hat$targets,
+                              "ml_m"    = m_hat$targets,
+                              "ml_g"    = g_hat$targets,
+                              "ml_lbar" = lbar_hat$targets,
+                              "ml_mbar" = mbar_hat$targets,
+                              "ml_gbar" = gbar_hat$targets)
+                            res$models = list(
+                              "ml_l"    = l_hat$models,
+                              "ml_m"    = m_hat$models,
+                              "ml_g"    = g_hat$models,
+                              "ml_lbar" = lbar_hat$models,
+                              "ml_mbar" = mbar_hat$models,
+                              "ml_gbar" = gbar_hat$models)
                           }
-                          res = private$panel_score_elements(y, d, ybar, dbar, m_hat, l_hat, g_hat,
-                                                             mbar_hat, lbar_hat, gbar_hat)
-                          res$preds = list("ml_l" = l_hat, "ml_m" = m_hat, "ml_g" = g_hat,
-                                           "ml_lbar" = lbar_hat, "ml_mbar" = mbar_hat, "ml_gbar" = gbar_hat)
                           return(res)
                         },
 
@@ -613,95 +729,121 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                                         mbar_hat, lbar_hat, gbar_hat,
                                                         smpls){
 
+                          if(self$dml_type == "non-separable"){
+                            # Residuals
+                            u_hat  = y - l_hat
+                            v_hat  = d - m_hat
+                            ug_hat = y - g_hat
 
-                          if(self$model == "non-separable"){
-                                  # Residuals
-                                  u_hat  = y - l_hat
-                                  v_hat  = d - m_hat
-                                  ug_hat = y - g_hat
+                            # Calculate scores
+                            if (self$score == "orth-PO") {
+                              # orthogonal score
+                              psi_theta_a = -1*v_hat * v_hat
+                              psi_theta_b =    v_hat * u_hat
+                              res_y = u_hat
+                              res_d = v_hat
 
-                                  # Calculate scores
-                                  if (self$score == "orth-PO") {
-                                    # orthogonal score
-                                    psi_theta_a = -1*v_hat * v_hat
-                                    psi_theta_b =    v_hat * u_hat
+                            } else if (self$score == "orth-IV") {
+                              # orthogonal score
+                              psi_theta_a = -1*v_hat * d
+                              psi_theta_b =    v_hat * ug_hat
+                              res_y = ug_hat
+                              res_d = d
 
-                                  } else if (self$score == "orth-IV") {
-                                    # orthogonal score
-                                    psi_theta_a = -1*v_hat * d
-                                    psi_theta_b =    v_hat * ug_hat
+                            } else if (self$score == "NO"){
+                              # non-orthogonal score
+                              psi_theta_a = -1*d * d
+                              psi_theta_b =    d * u_hat
+                              res_y = u_hat
+                              res_d = d
 
-                                  } else if (self$score == "NO"){
-                                    # non-orthogonal score
-                                    psi_theta_a = -1*d * d
-                                    psi_theta_b =    d * u_hat
+                            } else if (self$score == "NO-IV"){
+                              psi_theta_a = -1*d * d
+                              psi_theta_b =    d * ug_hat
+                              res_y = ug_hat
+                              res_d = d
+                            }
 
-                                  } else if (self$score == "NO-IV"){
-                                    psi_theta_a = -1*d * d
-                                    psi_theta_b =    d * ug_hat
-                                  }
+                            theta_hat = -mean(psi_theta_b, na.rm = TRUE) / mean(psi_theta_a, na.rm = TRUE)
 
-                                  theta_hat = -mean(psi_theta_b, na.rm = TRUE) / mean(psi_theta_a, na.rm = TRUE)
-                                  res = list(theta_hat = theta_hat)
-                                  psis = list(psi_theta_a = psi_theta_a,
-                                              psi_theta_b = psi_theta_b)
-                                  return(c(res,psis))
+                            # Calculate Model RMSE
+                            if (self$score == "orth-PO") {
+                              model_mse = (u_hat - v_hat*theta_hat)^2
+                            } else if (self$score == "orth-IV") {
+                              model_mse = (ug_hat - d *theta_hat)^2  ##check if correct
+                            } else if (self$score == "NO"){
+                              model_mse = (u_hat - d *theta_hat)^2
+                            } else if (self$score == "NO-IV"){
+                              model_mse = (ug_hat - d *theta_hat)^2
+                            }
 
-                          }else if(self$model == "separable"){
-                                  pi_old = 0
-                                  theta_old = 0
+                            #print(paste0("model_rmse in double_ml_cre_plr.R: ", model_rmse))
 
-                                  iterations = 0
-                                  ErrorTolerance = 1e-15
-                                  MaxIterations = 1000
-                                  ContinueCondition = TRUE
+                            res = list(theta_hat  = theta_hat,
+                                       model_mse = model_mse,
+                                       res_y = res_y,
+                                       res_d = res_d)
+                            psis = list(psi_theta_a = psi_theta_a,
+                                        psi_theta_b = psi_theta_b)
+                            #print(paste0("res$res_y: ", res$res_y, "; ", "res$res_d: ", res$res_d))
 
-                                  while(ContinueCondition){
+                            return(c(res,psis))
 
-                                    v_hat = d - m_hat
-                                    vbar_hat = dbar - mbar_hat
+                          }else if(self$dml_type == "separable"){
+                            pi_old = 0
+                            theta_old = 0
 
-                                    psi_theta_a = -1*v_hat*v_hat
-                                    psi_theta_b = v_hat*(y - l_hat - vbar_hat*pi_old)
+                            iterations = 0
+                            ErrorTolerance = 1e-15
+                            MaxIterations = 1000
+                            ContinueCondition = TRUE
 
-                                    theta_new = -mean(psi_theta_b, na.rm = TRUE) / mean(psi_theta_a, na.rm = TRUE)
+                            while(ContinueCondition){
 
-                                    #BG estimator for d_i
-                                    psi_bg_a = -1*vbar_hat*vbar_hat
-                                    psi_bg_b =    vbar_hat*(ybar-lbar_hat)
+                              v_hat = d - m_hat
+                              vbar_hat = dbar - mbar_hat
 
-                                    theta_bg = -mean(psi_bg_b, na.rm = TRUE) / mean(psi_bg_a, na.rm = TRUE)
+                              psi_theta_a = -1*v_hat*v_hat
+                              psi_theta_b = v_hat*(y - l_hat - vbar_hat*pi_old)
 
-                                    #Note that CRE estimator for d_i is: pi_new = theta_bg - theta_wg
-                                    pi_new =  theta_bg - theta_new
+                              theta_new = -mean(psi_theta_b, na.rm = TRUE) / mean(psi_theta_a, na.rm = TRUE)
 
-                                    # 4. Evaluate convergence
-                                    ContinueCondition = (abs(pi_old-pi_new)>ErrorTolerance &
-                                                         abs(theta_new-theta_old)>ErrorTolerance &
-                                                           iterations < MaxIterations)
+                              #BG estimator for d_i
+                              psi_bg_a = -1*vbar_hat*vbar_hat
+                              psi_bg_b =    vbar_hat*(ybar-lbar_hat)
 
-                                    if (ContinueCondition){
-                                      # For next iteration
-                                      pi_old     = pi_new
-                                      theta_old  = theta_new
-                                      iterations = iterations+1
+                              theta_bg = -mean(psi_bg_b, na.rm = TRUE) / mean(psi_bg_a, na.rm = TRUE)
 
-                                    } else if (ContinueCondition == FALSE & iterations < MaxIterations)  {
+                              #Note that CRE estimator for d_i is: pi_new = theta_bg - theta_wg
+                              pi_new =  theta_bg - theta_new
 
-                                      print(paste0("Convergence of estimation algorithm at initeration no.",iterations))
+                              # 4. Evaluate convergence
+                              ContinueCondition = (abs(pi_old-pi_new)>ErrorTolerance &
+                                                     abs(theta_new-theta_old)>ErrorTolerance &
+                                                     iterations < MaxIterations)
 
-                                      theta_hat  = theta_new
-                                      res = list(theta_hat = theta_hat)
-                                      psis = list(psi_theta_a = psi_theta_a,
-                                                  psi_theta_b = psi_theta_b)
-                                      return(c(res,psis))
+                              if (ContinueCondition){
+                                # For next iteration
+                                pi_old     = pi_new
+                                theta_old  = theta_new
+                                iterations = iterations+1
 
-                                    } else {
-                                      stop(print(paste0("Convergence of estimation algorithm NOT achieved. no. iterations = ",iterations)))
-                                    }
-                                  }
+                              } else if (ContinueCondition == FALSE & iterations < MaxIterations)  {
+
+                                print(paste0("Convergence of estimation algorithm at initeration no.",iterations))
+
+                                theta_hat  = theta_new
+                                res = list(theta_hat = theta_hat)
+                                psis = list(psi_theta_a = psi_theta_a,
+                                            psi_theta_b = psi_theta_b)
+                                return(c(res,psis))
+
+                              } else {
+                                stop(print(paste0("Convergence of estimation algorithm NOT achieved. no. iterations = ",iterations)))
                               }
-                          },
+                            }
+                          }
+                        },
 
                         nuisance_tuning = function(smpls, param_set, tune_settings,
                                                    tune_on_folds, ...) {
@@ -714,7 +856,7 @@ dml_cre_plr = R6Class("dml_cre_plr",
                             })
                           }
 
-                          if(self$model == "non-separable"){
+                          if(self$dml_type == "non-separable"){
 
                             tuning_result_m = dml_tune(self$learner$ml_m,
                                                        c(self$data$x_cols,self$data$xbar_cols,self$data$dbar_cols),
@@ -725,6 +867,8 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                                        tune_settings,
                                                        tune_settings$measure$ml_m,
                                                        private$task_type$ml_m)
+#print(paste0("data_tune_list: ", data_tune_list))
+#print(paste0("tuning_result_m: ", tuning_result_m))
 
                             tuning_result_l = dml_tune(self$learner$ml_l,
                                                        c(self$data$x_cols,self$data$xbar_cols),
@@ -816,7 +960,7 @@ dml_cre_plr = R6Class("dml_cre_plr",
                                 "ml_l" = list(tuning_result_l, params = tuning_result_l$params),
                                 "ml_m" = list(tuning_result_m, params = tuning_result_m$params))
                             }
-                          } else if(self$model == "separable"){
+                          } else if(self$dml_type == "separable"){
 
                             d = self$data$data_model[[self$data$treat_col]]
                             y = self$data$data_model[[self$data$y_col]]
@@ -824,14 +968,14 @@ dml_cre_plr = R6Class("dml_cre_plr",
                             ybar = self$data$data_model[[self$data$ybar_col]]
 
                             tuning_result_mbar = dml_tune(self$learner$ml_mbar,
-                                                        self$data$xbar_cols,
-                                                        self$data$dbar_cols,
-                                                        data_tune_list,
-                                                        nuisance_id = "nuis_mbar",
-                                                        param_set$ml_mbar,
-                                                        tune_settings,
-                                                        tune_settings$measure$ml_mbar,
-                                                        private$task_type$ml_mbar)
+                                                          self$data$xbar_cols,
+                                                          self$data$dbar_cols,
+                                                          data_tune_list,
+                                                          nuisance_id = "nuis_mbar",
+                                                          param_set$ml_mbar,
+                                                          tune_settings,
+                                                          tune_settings$measure$ml_mbar,
+                                                          private$task_type$ml_mbar)
 
                             tuning_result_m = dml_tune(self$learner$ml_m,
                                                        c(self$data$x_cols,self$data$xbar_cols),
@@ -879,15 +1023,15 @@ dml_cre_plr = R6Class("dml_cre_plr",
                               }
 
                               lbar_hat = dml_cv_predict(self$learner$ml_lbar,
-                                                      self$data$x_cols,
-                                                      self$data$y_col,
-                                                      self$data$data_model,
-                                                      nuisance_id = "nuis_lbar",
-                                                      smpls = smpls,
-                                                      est_params = self$get_params("ml_lbar"),
-                                                      return_train_preds = FALSE,
-                                                      task_type = private$task_type$ml_lbar,
-                                                      fold_specific_params = private$fold_specific_params)
+                                                        self$data$x_cols,
+                                                        self$data$y_col,
+                                                        self$data$data_model,
+                                                        nuisance_id = "nuis_lbar",
+                                                        smpls = smpls,
+                                                        est_params = self$get_params("ml_lbar"),
+                                                        return_train_preds = FALSE,
+                                                        task_type = private$task_type$ml_lbar,
+                                                        fold_specific_params = private$fold_specific_params)
 
                               data_aux = data.table(self$data$data_model,
                                                     "y_minus_l0_hat" = y - lbar_hat)
@@ -907,15 +1051,15 @@ dml_cre_plr = R6Class("dml_cre_plr",
                               if (self$score == "orth-IV"){
 
                                 mbar_hat = dml_cv_predict(self$learner$ml_mbar,
-                                                        self$data$x_cols,
-                                                        self$data$treat_col,
-                                                        self$data$data_model,
-                                                        nuisance_id = "nuis_mbar",
-                                                        smpls = smpls,
-                                                        est_params = self$get_params("ml_mbar"),
-                                                        return_train_preds = FALSE,
-                                                        task_type = private$task_type$ml_mbar,
-                                                        fold_specific_params = private$fold_specific_params)
+                                                          self$data$x_cols,
+                                                          self$data$treat_col,
+                                                          self$data$data_model,
+                                                          nuisance_id = "nuis_mbar",
+                                                          smpls = smpls,
+                                                          est_params = self$get_params("ml_mbar"),
+                                                          return_train_preds = FALSE,
+                                                          task_type = private$task_type$ml_mbar,
+                                                          fold_specific_params = private$fold_specific_params)
 
                                 data_aux = data.table(self$data$data_model,
                                                       "d_minus_m0_hat" = d - mbar_hat)
@@ -1011,11 +1155,23 @@ dml_cre_plr = R6Class("dml_cre_plr",
                           }
                           return()
                         },
-                        check_model = function(model) {
-                          assert(check_character(model))
-                          if (is.character(model)) {
-                            valid_model = c("non-separable", "separable")
-                            assertChoice(model, valid_model)
+                        check_approach_and_type = function(approach, type, transform) {
+                          assert(check_character(approach))
+                          assert(check_character(type))
+                          assert(check_character(transform))
+                          if (is.character(approach)){
+                            valid_approach = c("cre", "hybrid")
+                            assertChoice(approach, valid_approach)
+                            if (approach == "hybrid"){
+                              if (is.character(transform)){
+                                valid_transform = c("wg", "fd")
+                                assertChoice(transform, valid_transform)
+                              }
+                            }
+                          }
+                          if (is.character(type)){
+                            valid_type = c("non-separable", "separable")
+                            assertChoice(type, valid_type)
                           }
                           return()
                         },

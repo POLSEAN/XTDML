@@ -1,10 +1,9 @@
-## Collection of functions (MODIFY!)
 
 dml_cv_predict = function(learner, X_cols, y_col,
-  data_model, nuisance_id,
-  smpls = NULL, est_params = NULL,
-  return_train_preds = FALSE, task_type = NULL,
-  fold_specific_params = FALSE) {
+                          data_model, nuisance_id,
+                          smpls = NULL, est_params = NULL,
+                          return_train_preds = FALSE, task_type = NULL,
+                          fold_specific_params = FALSE) {
 
   valid_task_type = c("regr", "classif")
   assertChoice(task_type, valid_task_type)
@@ -14,6 +13,8 @@ dml_cv_predict = function(learner, X_cols, y_col,
   }
 
   fold_specific_target = (all(class(data_model) == "list"))
+
+  y = data_model[[y_col]]
 
   if (!fold_specific_target) {
     n_obs = nrow(data_model)
@@ -31,11 +32,14 @@ dml_cv_predict = function(learner, X_cols, y_col,
         task_pred, smpls$train_ids,
         smpls$test_ids)
       resampling_pred = resample(task_pred, ml_learner, resampling_smpls,
-        store_models = TRUE)
-      preds = extract_prediction(resampling_pred, task_type, n_obs)
+                                 store_models = TRUE)
+      preds   = extract_prediction(resampling_pred, task_type, n_obs)
+      targets = y  #ap
+      models  = extract_models(resampling_pred)
+
       if (return_train_preds) {
         train_preds = extract_prediction(resampling_pred, task_type, n_obs,
-          return_train_preds = TRUE)
+                                         return_train_preds = TRUE)
       }
     } else {
       # learners initiated according to fold-specific learners, proceed foldwise
@@ -57,15 +61,17 @@ dml_cv_predict = function(learner, X_cols, y_col,
 
       resampling_pred = lapply(seq_len(length(ml_learners)), function(x) {
         resample(task_pred, ml_learners[[x]],
-          resampling_smpls[[x]],
-          store_models = TRUE)
+                 resampling_smpls[[x]],
+                 store_models = TRUE)
       })
 
       preds = extract_prediction(resampling_pred, task_type, n_obs)
+      targets = y #extract_target(resampling_pred, y, n_obs) #needs ro be changed for hybrid
+      models = extract_models(resampling_pred)
+
       if (return_train_preds) {
-        train_preds = extract_prediction(resampling_pred, task_type,
-          n_obs,
-          return_train_preds = TRUE)
+        train_preds = extract_prediction(resampling_pred, task_type, n_obs,
+                                         return_train_preds = TRUE)
       }
     }
   } else {
@@ -93,10 +99,13 @@ dml_cv_predict = function(learner, X_cols, y_col,
         seq_len(length(data_model)),
         function(x) {
           resample(task_pred[[x]], ml_learner,
-            resampling_smpls[[x]],
-            store_models = TRUE)
+                   resampling_smpls[[x]],
+                   store_models = TRUE)
         })
-      preds = extract_prediction(resampling_pred, task_type, n_obs)
+      preds   = extract_prediction(resampling_pred, task_type, n_obs)
+      targets = rep(NA_real_, n_obs)  #ap
+      models  = extract_models(resampling_pred)
+
     } else {
       # learners initiated according to fold-specific learners, proceed foldwise
       ml_learners = lapply(
@@ -109,21 +118,31 @@ dml_cv_predict = function(learner, X_cols, y_col,
       })
       resampling_pred = lapply(seq_len(length(ml_learners)), function(x) {
         resample(task_pred[[x]], ml_learners[[x]],
-          resampling_smpls[[x]],
-          store_models = TRUE)
+                 resampling_smpls[[x]],
+                 store_models = TRUE)
       })
       preds = extract_prediction(resampling_pred, task_type, n_obs)
+      targets = rep(NA_real_, n_obs)  #ap: task either regr or classif
+      models = extract_models(resampling_pred)
+
     }
   }
   if (return_train_preds) {
-    return(list("preds" = preds, "train_preds" = train_preds))
+    return(list(
+      "preds" = preds,
+      "targets" = targets,              #ap
+      "train_preds" = train_preds,
+      "models" = models))
   } else {
-    return(preds)
+    return(list(
+      "preds" = preds,
+      "targets" = targets, #ap
+      "models" = models))
   }
 }
 
 dml_tune = function(learner, X_cols, y_col, data_tune_list,
-  nuisance_id, param_set, tune_settings, measure, task_type) {
+                    nuisance_id, param_set, tune_settings, measure, task_type) {
 
   task_tune = lapply(data_tune_list, function(x) {
     initiate_task(
@@ -159,7 +178,7 @@ dml_tune = function(learner, X_cols, y_col, data_tune_list,
 }
 
 extract_prediction = function(obj_resampling, task_type, n_obs,
-  return_train_preds = FALSE) {
+                              return_train_preds = FALSE) {
 
   valid_task_type = c("regr", "classif")
   assertChoice(task_type, valid_task_type)
@@ -209,9 +228,31 @@ extract_prediction = function(obj_resampling, task_type, n_obs,
       preds[f_hat[[ind_name]]] = f_hat[[resp_name]]
     }
   }
-
   return(preds)
 }
+
+extract_from_list = function(x) {
+  learner = x$score()$learner
+  stopifnot(length(learner) == 1)
+  return(learner[[1]])
+}
+
+extract_models = function(obj_resampling) {
+  if (testR6(obj_resampling, classes = "ResampleResult")) {
+    models = obj_resampling$score()$learner
+  } else {
+    models = lapply(obj_resampling, extract_from_list)
+  }
+  return(models)
+}
+
+# # Define the rmse function
+# RMSE_ = function(y_pred, y_true) {
+#   # Identify non-missing values
+#   subset = !is.na(y_true)
+#   rmse = RMSE(y_pred[subset], y_true[subset])
+#   return(rmse)
+# }
 
 initiate_learner = function(learner, task_type, params,
                             return_train_preds = FALSE) {
@@ -226,7 +267,7 @@ initiate_learner = function(learner, task_type, params,
       ml_learner$param_set$values,
       params)
   } else if (is.null(params) | length(params) == 0) {
-   message("No parameters provided for learners. Default values are used.")
+    message("No parameters provided for learners. Default values are used.")
   }
 
   if (task_type == "classif") {
@@ -370,16 +411,16 @@ check_smpl_split = function(smpl, n_obs, check_intersect = FALSE) {
   }
   lapply(smpl$train_ids, function(train_ids) {
     assert_vector(train_ids,
-      any.missing = FALSE, all.missing = FALSE,
-      unique = TRUE, max.len = n_obs)
+                  any.missing = FALSE, all.missing = FALSE,
+                  unique = TRUE, max.len = n_obs)
   })
   lapply(smpl$train_ids, function(train_ids) {
     assert_subset(train_ids, seq(n_obs))
   })
   lapply(smpl$test_ids, function(test_ids) {
     assert_vector(test_ids,
-      any.missing = FALSE, all.missing = FALSE,
-      unique = TRUE, max.len = n_obs)
+                  any.missing = FALSE, all.missing = FALSE,
+                  unique = TRUE, max.len = n_obs)
   })
   lapply(smpl$test_ids, function(test_ids) {
     assert_subset(test_ids, seq(n_obs))
@@ -393,34 +434,33 @@ check_smpl_split = function(smpl, n_obs, check_intersect = FALSE) {
   return(TRUE)
 }
 
-
-# Within-group (WG) transformation for fixed effects
-wg_transformation = function (x, idx){
-
-  data = data_frame(x, "id" = idx)
-  x_transf = demean(data, select = "x", group = "id", add_attributes = FALSE,
-                    verbose = FALSE)
-  x_m = mean(data$x)
-  x_wg = x_transf[2] + x_m
-  xx = as.numeric(unlist(x_wg))
-  return(xx)
-}
-
-# First-difference (FD) transformation for fixed effects
-fd_transformation = function (x, idx){
-
-  data = data_frame(x, "id" = idx)
-
-  df.fd = data %>%
-    group_by(id) %>%
-    mutate(across(starts_with("x"), ~ c(NA, diff(.x))))  %>%
-    ungroup()
-
-  df.fd <- select(df.fd, -id)
-
-  xx = as.numeric(unlist(df.fd))
-  return(xx)
-}
+# # Within-group (WG) transformation for fixed effects
+# wg_transformation = function (x, idx){
+#
+#   data = data_frame(x, "id" = idx)
+#   x_transf = demean(data, select = "x", group = "id", add_attributes = FALSE,
+#                     verbose = FALSE)
+#   x_m = mean(data$x)
+#   x_wg = x_transf[2] + x_m
+#   xx = as.numeric(unlist(x_wg))
+#   return(xx)
+# }
+#
+# # First-difference (FD) transformation for fixed effects
+# fd_transformation = function (x, idx){
+#
+#   data = data_frame(x, "id" = idx)
+#
+#   df.fd = data %>%
+#     group_by(id) %>%
+#     mutate(across(starts_with("x"), ~ c(NA, diff(.x))))  %>%
+#     ungroup()
+#
+#   df.fd <- select(df.fd, -id)
+#
+#   xx = as.numeric(unlist(df.fd))
+#   return(xx)
+# }
 
 # remove NA from summation within outer()
 sum_na <- function(x) if(all(is.na(x))) NA else sum(x, na.rm = TRUE)

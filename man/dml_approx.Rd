@@ -29,6 +29,9 @@ splits after calling \code{fit()} with \code{dml_procedure = "dml1"}.}
 Standard errors of the causal parameter(s) \code{"theta"} for the \code{n_rep} different
 sample splits after calling \code{fit()}.}
 
+\item{\code{all_model_rmse}}{(\code{matrix()}) \cr
+Model root-mean-squared-error.}
+
 \item{\code{apply_cross_fitting}}{(\code{logical(1)}) \cr
 Indicates whether cross-fitting should be applied. Default is \code{TRUE}.}
 
@@ -71,9 +74,32 @@ calling \code{fit()}.}
 Value of the score function component \eqn{\psi_theta_b(W; \pi, \eta)} after
 calling \code{fit()}.}
 
+\item{\code{res_y}}{(\code{array()}) \cr
+Residual of output equation}
+
+\item{\code{res_d}}{(\code{array()}) \cr
+Residual of treatment equation}
+
 \item{\code{predictions}}{(\code{array()}) \cr
 Predictions of the nuisance models after calling
 \code{fit(store_predictions=TRUE)}.}
+
+\item{\code{targets}}{(\code{array()}) \cr
+Targets of the nuisance models after calling
+\code{fit(store_predictions=TRUE)}.}
+
+\item{\code{rmses}}{(\code{array()}) \cr
+The root-mean-squared-errors of the nuisance parameters}
+
+\item{\code{all_model_mse}}{(\code{array()}) \cr
+Collection of all mean-squared-errors of the model}
+
+\item{\code{model_rmse}}{(\code{array()}) \cr
+The root-mean-squared-errors of the model}
+
+\item{\code{models}}{(\code{array()}) \cr
+The fitted nuisance models after calling
+\code{fit(store_models=TRUE)}.}
 
 \item{\code{pval_theta}}{(\code{numeric()}) \cr
 p-values for the causal parameter(s) \code{"theta"} after calling \code{fit()}.}
@@ -143,7 +169,7 @@ Print 'DML with FE' objects.
 \subsection{Method \code{fit()}}{
 Estimate DML models with FE.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{dml_approx$fit(store_predictions = FALSE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{dml_approx$fit(store_predictions = FALSE, store_models = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -152,6 +178,11 @@ Estimate DML models with FE.
 \item{\code{store_predictions}}{(\code{logical(1)}) \cr
 Indicates whether the predictions for the nuisance functions should be
 stored in field \code{predictions}. Default is \code{FALSE}.}
+
+\item{\code{store_models}}{(\code{logical(1)}) \cr
+Indicates whether the fitted models for the nuisance functions should be
+stored in field \code{models} if you want to analyze the models or extract
+information like variable importance. Default is \code{FALSE}.}
 }
 \if{html}{\out{</div>}}
 }

@@ -15,7 +15,6 @@ instance of \code{dml_hybrid_data}.
 \itemize{
 \item \code{dml_hybrid_data$new()} for initialization from a \code{data.table}.
 \item \code{\link[=dml_hybrid_data]{dml_hybrid_data()}} for initialization from a \code{data.frame}.
-\item \code{\link[=dml_hybrid_data_from_matrix]{dml_hybrid_data_from_matrix()}} for initialization from \code{matrix} objects,
 }
 }
 \section{Active bindings}{

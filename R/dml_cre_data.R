@@ -11,7 +11,6 @@
 #' instance of `dml_cre_data`.
 #' * `dml_cre_data$new()` for initialization from a `data.table`.
 #' * [dml_cre_data_from_data_frame()] for initialization from a `data.frame`.
-#' * [dml_cre_data_from_matrix()] for initialization from `matrix` objects,
 #'
 #' @export
 dml_cre_data = R6Class("dml_cre_data",
@@ -353,7 +352,7 @@ dml_cre_data = R6Class("dml_cre_data",
                                     stop("Specify one treatment variable at a time.")
                                   }
 
-                                  #super$set_data_model(treatment_var) #############
+                                  #super$set_data_model(treatment_var, unique = TRUE)############
 
                                   # add the cluster_cols to the data_model_
                                   col_indx = c(
@@ -421,7 +420,7 @@ dml_cre_data = R6Class("dml_cre_data",
                                       "At least one variable/column is set as treatment",
                                       "variable ('d_cols') and as a cluster variable ('cluster_cols')."))
                                   }
-                                  if (any(cbind(x_cols,xbar_cols,dbar_cols) %in% cluster_cols)) {
+                                  if (any(c(x_cols,xbar_cols,dbar_cols) %in% cluster_cols)) {
                                     stop(paste(
                                       "At least one variable/column is set as covariate ('x_cols')",
                                       "and as a cluster variable ('cluster_cols')."))
