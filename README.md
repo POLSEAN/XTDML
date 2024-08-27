@@ -7,7 +7,7 @@ The package allows for the choice of three approaches for handling the unobserve
   3. The **hybrid approach** uses *original data* and requires that the user specifies the transformation (wg or fd; default ```model = "wg"```).
 
 > [!WARNING]
-> Modifications to the `DoubleML` package will be soon available 
+> New version of `XTDML` package contains Model RMSE, RMSE of l nuisance parameter, and RMSE of r nuisance parameter. Currently working on `XTDML` for IV estimation.
 
 ## Installing the package from GitHub
 The current version can be installed via devtools:
@@ -20,7 +20,7 @@ Sample code is provided in the folder `./examples`
 
 1. `01_xtdml_for_cre.ipjnb` shows how to use the CRE approach in DML
 2. `02_xtdml_for_wg_approx.ipjnb` shows how to use the WG (approximation) approach in DML
-
+3. `03_xtdml_for_fd_exact.ipjnb` shows how to use the FD (exact) approach in DML
 
 ## References
 Bach, P., Chernozhukov, V., Kurz, M. S., Spindler, M. and Klaassen, S. (2024), DoubleML - An Object-Oriented Implementation of Double Machine Learning in R, *Journal of Statistical Software*, 108(3): 1-56, doi:10.18637/jss.v108.i03, arXiv:2103.09603.
