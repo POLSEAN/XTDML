@@ -429,7 +429,7 @@ dml_approx_plr = R6Class("dml_approx_plr",
           if (self$score == "orth-PO") {
             model_mse = (u_hat - v_hat*theta_hat)^2
           } else if (self$score == "orth-IV") {
-            model_mse = (ug_hat - d *theta_hat)^2  ##check if correct
+            model_mse = (ug_hat - d *theta_hat)^2
           } else if (self$score == "NO"){
             model_mse = (u_hat - d *theta_hat)^2
           } else if (self$score == "NO-IV"){

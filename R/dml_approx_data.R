@@ -103,12 +103,14 @@ dml_approx_data = R6Class("dml_approx_data",
                                   }
                                 },
 
-                                #' @field x_cols (`character()`) \cr
-                                #' The covariates.
+                                #' @field x_cols (`NULL`, `character()`) \cr
+                                #' The covariates. If `NULL`, all variables (columns of `data`) which are
+                                #' neither specified as outcome variable `y_col`, nor as treatment variables
+                                #' `d_cols`, nor as instrumental variables `z_cols` are used as covariates.
+                                #' Default is `NULL`.
                                 x_cols = function(value) {
                                   if (missing(value)) {
                                     return(private$x_cols_)
-                                    #stop("Specify x_cols")
                                   } else {
                                     x_cols = value # to get more meaningful assert error messages
                                     reset_value = !is.null(self$data_model)
@@ -119,6 +121,14 @@ dml_approx_data = R6Class("dml_approx_data",
                                     if (!is.null(x_cols)) {
                                       assert_subset(x_cols, self$all_variables)
                                       private$x_cols_ = x_cols
+                                    } else {
+                                      if (!is.null(self$z_cols)) {
+                                        y_d_z = unique(c(self$y_col, self$d_cols, self$z_cols))
+                                        private$x_cols_ = setdiff(self$all_variables, y_d_z)
+                                      } else {
+                                        y_d = union(self$y_col, self$d_cols)
+                                        private$x_cols_ = setdiff(self$all_variables, y_d)
+                                      }
                                     }
                                     if (reset_value) {
                                       private$check_disjoint_sets()
@@ -290,7 +300,6 @@ dml_approx_data = R6Class("dml_approx_data",
                                     self$x_cols,
                                     self$y_col,
                                     self$treat_col,
-                                    self$xbar_cols,
                                     self$z_cols,
                                     self$cluster_cols)
                                   private$data_model_ = self$data[, col_indx, with = FALSE]
@@ -309,76 +318,73 @@ dml_approx_data = R6Class("dml_approx_data",
                                 cluster_cols_ = NULL,
                                 data_model_ = NULL,
                                 check_disjoint_sets = function() {
-
                                  # super$check_disjoint_sets()
-
                                   y_col     = self$y_col
                                   x_cols    = self$x_cols
                                   d_cols    = self$d_cols
 
                                   cluster_cols = self$cluster_cols
 
-
-                                  if (y_col %in% x_cols) {
-                                    stop(paste(
-                                      y_col,
-                                      "cannot be set as outcome variable 'y_col' and",
-                                      "covariate in 'x_cols'."))
-                                  }
-                                  if (y_col %in% d_cols) {
-                                    stop(paste(
-                                      y_col,
-                                      "cannot be set as outcome variable 'y_col' and",
-                                      "treatment variable in 'd_cols'."))
-                                  }
-                                  if (y_col %in% cluster_cols) {
-                                    stop(paste(
-                                      y_col,
-                                      "cannot be set as outcome variable 'y_col' and",
-                                      "cluster variable in 'cluster_cols'."))
-                                  }
-                                  if (any(d_cols %in% x_cols)) {
-                                    stop(paste(
-                                      "At least one variable/column is set as treatment",
-                                      "variable ('d_cols') and as a covariate ('x_cols').",
-                                      "Consider using parameter 'use_other_treat_as_covariate'."))
-                                  }
-                                  if (any(d_cols %in% cluster_cols)) {
-                                    stop(paste(
-                                      "At least one variable/column is set as treatment",
-                                      "variable ('d_cols') and as a cluster variable ('cluster_cols')."))
-                                  }
-                                  if (any(cbind(x_cols) %in% cluster_cols)) {
-                                    stop(paste(
-                                      "At least one variable/column is set as covariate ('x_cols')",
-                                      "and as a cluster variable ('cluster_cols')."))
-                                  }
-                                  if (!is.null(self$z_cols)) {
-                                    z_cols = self$z_cols
-
-                                    if (y_col %in% z_cols) {
+                                    if (y_col %in% x_cols) {
                                       stop(paste(
                                         y_col,
                                         "cannot be set as outcome variable 'y_col' and",
-                                        "instrumental variable in 'z_cols'."))
+                                        "covariate in 'x_cols'."))
                                     }
-                                    if (any(z_cols %in% d_cols)) {
+                                    if (y_col %in% d_cols) {
+                                      stop(paste(
+                                        y_col,
+                                        "cannot be set as outcome variable 'y_col' and",
+                                        "treatment variable in 'd_cols'."))
+                                    }
+                                    if (y_col %in% cluster_cols) {
+                                      stop(paste(
+                                        y_col,
+                                        "cannot be set as outcome variable 'y_col' and",
+                                        "cluster variable in 'cluster_cols'."))
+                                    }
+                                    if (any(d_cols %in% x_cols)) {
                                       stop(paste(
                                         "At least one variable/column is set as treatment",
-                                        "variable ('d_cols') and instrumental variable in 'z_cols'."))
+                                        "variable ('d_cols') and as a covariate ('x_cols').",
+                                        "Consider using parameter 'use_other_treat_as_covariate'."))
                                     }
-                                    if (any(z_cols %in% x_cols)) {
+                                    if (any(d_cols %in% cluster_cols)) {
+                                      stop(paste(
+                                        "At least one variable/column is set as treatment",
+                                        "variable ('d_cols') and as a cluster variable ('cluster_cols')."))
+                                    }
+                                    if (any(cbind(x_cols) %in% cluster_cols)) {
                                       stop(paste(
                                         "At least one variable/column is set as covariate ('x_cols')",
-                                        "and instrumental variable in 'z_cols'."))
+                                        "and as a cluster variable ('cluster_cols')."))
                                     }
-                                    if (any(z_cols %in% cluster_cols)) {
-                                      stop(paste(
-                                        "At least one variable/column is set as instrumental variable",
-                                        "('z_cols') and as a cluster variable ('cluster_cols')."))
+                                    if (!is.null(self$z_cols)) {
+                                      z_cols = self$z_cols
+
+                                      if (y_col %in% z_cols) {
+                                        stop(paste(
+                                          y_col,
+                                          "cannot be set as outcome variable 'y_col' and",
+                                          "instrumental variable in 'z_cols'."))
+                                      }
+                                      if (any(z_cols %in% d_cols)) {
+                                        stop(paste(
+                                          "At least one variable/column is set as treatment",
+                                          "variable ('d_cols') and instrumental variable in 'z_cols'."))
+                                      }
+                                      if (any(z_cols %in% x_cols)) {
+                                        stop(paste(
+                                          "At least one variable/column is set as covariate ('x_cols')",
+                                          "and instrumental variable in 'z_cols'."))
+                                      }
+                                      if (any(z_cols %in% cluster_cols)) {
+                                        stop(paste(
+                                          "At least one variable/column is set as instrumental variable",
+                                          "('z_cols') and as a cluster variable ('cluster_cols')."))
+                                      }
                                     }
                                   }
-                                }
                               )
 )
 
@@ -386,7 +392,7 @@ dml_approx_data = R6Class("dml_approx_data",
 #' data.frame.
 #'
 #' @description
-#' Initalization of DoubleMLData from `data.frame`.
+#' Initalization of dml_approx_data from `data.frame`.
 #'
 #' @param df (`data.frame()`)\cr
 #' Data object.

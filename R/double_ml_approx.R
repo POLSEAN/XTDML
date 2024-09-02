@@ -360,30 +360,29 @@ dml_approx = R6Class("dml_approx",
         "Treatment variable: ", paste0(self$data$d_cols, collapse = ", "),
         "\n",
         "Covariates: ", paste0(cbind(self$data$x_cols), collapse = ", "), "\n",
-        #"Instrument(s): ", paste0(self$data$z_cols, collapse = ", "), "\n",
+        "Instrument(s): ", paste0(self$data$z_cols, collapse = ", "), "\n",
         cluster_info,
         "No. Observations: ", self$data$n_obs, "\n",
         "No. Groups: ", length(unique(self$data$data_model[[self$data$cluster_cols]])), "\n")
 
-      if (is.character(self$score)) {
-        score_info = paste0(
-          "Score function: ", self$score, "\n",
-          "DML algorithm: ", self$dml_procedure, "\n",
-          "DML approach: transformed variables ", "\n")
-      }
+      score_info = paste0(
+        "Score function: ", self$score, "\n",
+        "DML algorithm: ", self$dml_procedure, "\n",
+        "DML approach: transformed variables ", "\n")
+
       learner_info = character(length(self$learner))
-      for (i_lrn in seq_len(length(self$params))) {
-        if (any(class(self$learner[[i_lrn]]) == "Learner")) {
+      learner_rmse_info = character(length(self$params))
+      for (i_lrn in seq_len(length(self$learner))) {
           learner_info[i_lrn] = paste0(
-            "Learner of nuisance ", self$params_names()[[i_lrn]], ": ", self$learner[[i_lrn]]$id, "\n",
-            "RMSE of nuisance ", self$params_names()[[i_lrn]], " : ", format(round(self$rmses[[i_lrn]], 5), nsmall = 5), "\n")
-        } else {
-          learner_info[i_lrn] = paste0(
-            "Learner of nuisance ", self$params_names()[[i_lrn]], ": ", self$learner[i_lrn], "\n",
-            "RMSE of nuisance ", self$params_names()[[i_lrn]], " : ", format(round(self$rmses[[i_lrn]], 5), nsmall = 5), "\n")
-        }
+            "Learner of ", self$learner_names()[[i_lrn]], ": ",
+            self$learner[[i_lrn]]$id, "\n")
       }
-      model_info = paste0("Model RMSE: ", format(round(self$model_rmse, 5), nsmall = 5), "\n")
+      for (i_lrn in seq_len(length(self$params))) {
+          learner_rmse_info[i_lrn] = paste0(
+            "RMSE of ", self$params_names()[[i_lrn]], " : ",
+                format(round(self$rmses[[i_lrn]], 3), nsmall = 3), "\n")
+      }
+      model_info = paste0("Model RMSE: ", format(round(self$model_rmse, 3), nsmall = 3), "\n")
       resampling_info = paste0(
           "No. folds: ", self$n_folds, "\n",
           "No. folds per cluster: ", private$n_folds_per_cluster, "\n",
@@ -396,7 +395,7 @@ dml_approx = R6Class("dml_approx",
         "\n------------------ Score & algorithm ------------------\n",
         score_info,
         "\n------------------ Machine learner ------------------\n",
-        learner_info, model_info,
+        learner_info, learner_rmse_info, model_info,
         "\n------------------ Resampling ------------------\n",
         resampling_info,
         "\n------------------ Fit summary ------------------\n ",
@@ -1226,8 +1225,10 @@ dml_approx = R6Class("dml_approx",
         }
       }
     },
-    calc_rmses = function(preds, targets){ ##ap
+    calc_rmses = function(preds, targets){                 ##ap
       for (learner in self$params_names()) {
+        #print(paste0("calc_rmses for learner: ", learner))
+
         if (is.null(targets[[learner]])){
           private$rmses_[[learner]] [private$i_rep, private$i_treat] = NULL #rep(NA,n_obs) ##
         }else{
@@ -1375,10 +1376,10 @@ dml_approx = R6Class("dml_approx",
           scaling_factor = 1 / prod(xx)
           thetas[i_fold] = -(scaling_factor * sum(psi_theta_b[test_index])) /
             (scaling_factor * sum(psi_theta_a[test_index]))
-          print(paste0("thetas in fold ", i_fold, " : ", thetas[i_fold]))
+          #print(paste0("thetas in fold ", i_fold, " : ", thetas[i_fold]))
 
           rmses[i_fold] = sqrt(scaling_factor * sum((res_y[test_index] - res_d[test_index] * thetas[i_fold])^2))
-          print(paste0("rmses in fold ", i_fold, " : ", rmses[i_fold]))
+          #print(paste0("rmses in fold ", i_fold, " : ", rmses[i_fold]))
         }
         theta = mean(thetas, na.rm = TRUE)
         private$all_dml1_coef_theta_[private$i_treat, private$i_rep, ] = thetas
@@ -1417,15 +1418,15 @@ dml_approx = R6Class("dml_approx",
 
           theta_subsample_mean =  - psi_theta_b_subsample_mean / psi_theta_a_subsample_mean
           rmses_subsample_mean =  sqrt(scaling_factor * sum((res_y[test_index] - res_d[test_index] * theta_subsample_mean)^2))
-          print(paste0("rmses in fold ", i_fold, " : ", rmses_subsample_mean))
-          print(paste0("theta_subsample_mean in fold ", i_fold, ": ", theta_subsample_mean))
+          #print(paste0("rmses in fold ", i_fold, " : ", rmses_subsample_mean))
+          #print(paste0("theta_subsample_mean in fold ", i_fold, ": ", theta_subsample_mean))
 
         }
         theta = -psi_theta_b_subsample_mean / psi_theta_a_subsample_mean
         model_rmse = rmses_subsample_mean
 
-        print(paste0("theta in dml2: ", theta))
-        print(paste0("rmse in dml2: ", model_rmse))
+        #print(paste0("theta in dml2: ", theta))
+        #print(paste0("rmse in dml2: ", model_rmse))
 
         private$model_rmse_ = model_rmse
       }
