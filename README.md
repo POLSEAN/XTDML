@@ -1,5 +1,5 @@
 # XTDML
-The `XTDML` package implements double machine learning (DML) for static partially linear regression (PLR) models with fixed effects as in [Clarke and Polselli (2023)](https://arxiv.org/abs/2312.08174). The package builds on `DoubleML` package by Bach et al. (2022) using the `mlr3` ecosystem.
+The `XTDML` package implements double machine learning (DML) for static partially linear regression (PLR) models with fixed effects as in [Clarke and Polselli (2023)](https://arxiv.org/abs/2312.08174). The package heavily builds on `DoubleML` package by Bach et al. (2022) using the `mlr3` ecosystem.
 
 The package allows for the choice of three approaches for handling the unobserved individual heterogeneity:
   1. Mundlak (1978)'s device or **correlated random effects** (CRE).
@@ -7,7 +7,7 @@ The package allows for the choice of three approaches for handling the unobserve
   3. The **hybrid approach** uses *original data* and requires that the user specifies the transformation (wg or fd; default ```model = "wg"```).
 
 > [!WARNING]
-> New version of `XTDML` package contains Model RMSE, RMSE of l nuisance parameter, and RMSE of r nuisance parameter. Currently working on `XTDML` for IV estimation.
+> New version of `XTDML` package contains Model RMSE and RMSE of the nuisance parameters. We are currently working on `XTDML` for IV estimation (soon available), where tests for weak IV will be made available.
 
 ## Installing the package from GitHub
 The current version can be installed via devtools:
