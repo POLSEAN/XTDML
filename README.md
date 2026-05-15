@@ -36,7 +36,7 @@ where
 
 The user can run the estimator directly on a panel `data.frame`; *no manual* data preparation is required. The two main choices are:
 
-1. **Panel-data approach:**  `approach = c("fd-exact", "wg-approx", "cre")`, default `"fd-exact"`. `xtdml` transforms the data internally according to the selected approach, following Clarke and Polselli (2025).
+1. **Panel-data approach:**  `approach = c("fd-exact", "wg-approx", "cre")`, default `"fd-exact"`. `xtdml` transforms the data internally according to the selected approach, following Clarke and Polselli (2026).
 2. **Covariate transformation:**  `transformX = c("no", "minmax", "poly")`, default `"no"`.
    - `"no"` leaves $X$ untransformed — recommended for tree-based learners.
    - `"minmax"` applies min–max normalization $x' = (x - x_{\min})/(x_{\max} - x_{\min})$ — recommended for neural networks.
